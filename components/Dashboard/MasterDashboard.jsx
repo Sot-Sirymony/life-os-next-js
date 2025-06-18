@@ -1,5 +1,11 @@
+"use client";
+
 import React, { useState, useEffect } from "react";
 import { FaBullseye, FaLayerGroup, FaCalendarAlt, FaChartBar, FaBars, FaTimes, FaUserCircle, FaPlus } from "react-icons/fa";
+import LifeGoalsBoard from "../Goals/LifeGoalsBoard";
+import WeeklyPlanner from "../Planner/WeeklyPlanner";
+import GoalCategories from "../Goals/GoalCategories";
+import ProgressSection from "./ProgressSection";
 
 const navItems = [
   { label: "Life Goals", icon: <FaBullseye /> },
@@ -215,17 +221,37 @@ export default function MasterDashboard() {
 
         {/* Placeholder Sections */}
         <div style={sectionsStyle}>
-          <div style={sectionBoxStyle}>
-            <h2 style={{ fontFamily: "'Poppins', sans-serif", color: "#6495ED", fontSize: windowWidth < 600 ? 17 : 22 }}>Life Goals</h2>
-            <p style={{ fontSize: windowWidth < 600 ? 13 : 16 }}>Quick access and summary of your life goals.</p>
-          </div>
+          {activeSection === "Life Goals" ? (
+            <div style={{ gridColumn: "1 / -1" }}>
+              <LifeGoalsBoard />
+            </div>
+          ) : activeSection === "Weekly Planner" ? (
+            <div style={{ gridColumn: "1 / -1" }}>
+              <WeeklyPlanner />
+            </div>
+          ) : activeSection === "Goal Categories" ? (
+            <div style={{ gridColumn: "1 / -1" }}>
+              <GoalCategories />
+            </div>
+          ) : activeSection === "Progress Summary" ? (
+            <div style={{ gridColumn: "1 / -1" }}>
+              <ProgressSection />
+            </div>
+          ) : (
+            <>
+              <div style={sectionBoxStyle}>
+                <h2 style={{ fontFamily: "'Poppins', sans-serif", color: "#6495ED", fontSize: windowWidth < 600 ? 17 : 22 }}>Life Goals</h2>
+                <p style={{ fontSize: windowWidth < 600 ? 13 : 16 }}>Quick access and summary of your life goals.</p>
+              </div>
+              <div style={sectionBoxStyle}>
+                <h2 style={{ fontFamily: "'Poppins', sans-serif", color: "#6495ED", fontSize: windowWidth < 600 ? 17 : 22 }}>Weekly Planner</h2>
+                <p style={{ fontSize: windowWidth < 600 ? 13 : 16 }}>Plan your week and assign tasks.</p>
+              </div>
+            </>
+          )}
           <div style={sectionBoxStyle}>
             <h2 style={{ fontFamily: "'Poppins', sans-serif", color: "#6495ED", fontSize: windowWidth < 600 ? 17 : 22 }}>Goal Categories</h2>
             <p style={{ fontSize: windowWidth < 600 ? 13 : 16 }}>Overview of your goal categories.</p>
-          </div>
-          <div style={sectionBoxStyle}>
-            <h2 style={{ fontFamily: "'Poppins', sans-serif", color: "#6495ED", fontSize: windowWidth < 600 ? 17 : 22 }}>Weekly Planner</h2>
-            <p style={{ fontSize: windowWidth < 600 ? 13 : 16 }}>Plan your week and assign tasks.</p>
           </div>
           <div style={sectionBoxStyle}>
             <h2 style={{ fontFamily: "'Poppins', sans-serif", color: "#6495ED", fontSize: windowWidth < 600 ? 17 : 22 }}>Progress Summary</h2>
@@ -233,7 +259,7 @@ export default function MasterDashboard() {
           </div>
         </div>
         {/* Floating Action Button */}
-        <button style={fabStyle} onClick={() => alert("Add Goal action!")} title="Add Goal">
+        <button style={fabStyle} onClick={() => alert("Add new item")}>
           <FaPlus />
         </button>
       </main>
