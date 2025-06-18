@@ -7,7 +7,7 @@ export default function Sidebar() {
 
   const menuItems = [
     { href: '/dashboard', label: 'Dashboard', icon: '📊' },
-    { href: '/goals', label: 'Goals', icon: '��' },
+    { href: '/goals', label: 'Goals', icon: '🎯' },
     { href: '/categories', label: 'Categories', icon: '📂' },
     { href: '/tasks', label: 'Tasks', icon: '✓' },
     { href: '/planner', label: 'Weekly Planner', icon: '📅' },

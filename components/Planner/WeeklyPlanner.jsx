@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FaCalendarAlt, FaClock, FaList, FaCalendarWeek } from 'react-icons/fa';
+import { FaCalendarAlt, FaClock, FaList, FaCalendarWeek, FaPlus } from 'react-icons/fa';
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -63,6 +63,7 @@ export default function WeeklyPlanner({ tasks = [], onTasksChange }) {
 
   const getTasksForTimeSlot = (day, hour) => {
     return tasks.filter(task => {
+      if (!task.startTime || typeof task.startTime !== 'string') return false;
       const taskStartHour = parseInt(task.startTime.split(':')[0]);
       return task.day === day && taskStartHour === hour;
     });

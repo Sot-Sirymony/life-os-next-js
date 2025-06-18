@@ -3,6 +3,10 @@ import LifeGoalsBoard from '../../components/Goals/LifeGoalsBoard';
 import WeeklyPlanner from '../../components/Planner/WeeklyPlanner';
 import AITaskFilter from '../../components/Progress/AITaskFilter';
 import AITimeEstimator from '../../components/Goals/AITimeEstimator';
+import RecentActivityFeed from '../../components/Dashboard/RecentActivityFeed';
+import PerformanceInsights from '../../components/Dashboard/PerformanceInsights';
+import AchievementHighlights from '../../components/Dashboard/AchievementHighlights';
+import TimeTrackingSummary from '../../components/Dashboard/TimeTrackingSummary';
 import { useState, useEffect } from 'react';
 
 // Dashboard Widget Component
@@ -14,7 +18,8 @@ function DashboardWidget({ title, value, icon, color = '#6495ED' }) {
       padding: '20px',
       boxShadow: '0 2px 8px rgba(100,149,237,0.08)',
       border: `2px solid ${color}`,
-      minWidth: '200px'
+      minWidth: '180px',
+      flex: '1 1 200px'
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
         <span style={{ fontSize: '24px' }}>{icon}</span>
@@ -66,7 +71,12 @@ function ProgressSummary({ goals, tasks }) {
       }}>
         Progress Summary
       </h2>
-      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+      <div style={{ 
+        display: 'flex', 
+        gap: '16px', 
+        flexWrap: 'wrap',
+        justifyContent: 'center'
+      }}>
         <DashboardWidget 
           title="Total Goals" 
           value={totalGoals} 
@@ -240,7 +250,12 @@ function QuickAccessWidget({ onNavigate }) {
       }}>
         Quick Access
       </h2>
-      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+      <div style={{ 
+        display: 'flex', 
+        gap: '12px', 
+        flexWrap: 'wrap',
+        justifyContent: 'center'
+      }}>
         {[
           { label: 'Add New Goal', icon: '➕', action: () => onNavigate('goals') },
           { label: 'Weekly Planner', icon: '📅', action: () => onNavigate('planner') },
@@ -265,7 +280,9 @@ function QuickAccessWidget({ onNavigate }) {
               cursor: 'pointer',
               fontFamily: "'PT Sans', sans-serif",
               fontSize: '14px',
-              transition: 'all 0.2s ease'
+              transition: 'all 0.2s ease',
+              minWidth: '140px',
+              justifyContent: 'center'
             }}
             onMouseOver={(e) => {
               e.target.style.background = '#6495ED';
@@ -338,7 +355,12 @@ function TopNavigation({ activeSection, onSectionChange }) {
       boxShadow: '0 2px 8px rgba(100,149,237,0.08)',
       marginBottom: '24px'
     }}>
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+      <div style={{ 
+        display: 'flex', 
+        gap: '8px', 
+        flexWrap: 'wrap',
+        justifyContent: 'center'
+      }}>
         {sections.map((section) => (
           <button
             key={section.id}
@@ -356,7 +378,9 @@ function TopNavigation({ activeSection, onSectionChange }) {
               fontFamily: "'PT Sans', sans-serif",
               fontSize: '14px',
               fontWeight: activeSection === section.id ? 600 : 400,
-              transition: 'all 0.2s ease'
+              transition: 'all 0.2s ease',
+              minWidth: '120px',
+              justifyContent: 'center'
             }}
           >
             <span>{section.icon}</span>
@@ -372,11 +396,16 @@ export default function Dashboard() {
   const [goals, setGoals] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [activeSection, setActiveSection] = useState('overview');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     // Fetch goals and tasks for the dashboard
     const fetchData = async () => {
       try {
+        setIsLoading(true);
+        setError(null);
+        
         const [goalsResponse, tasksResponse] = await Promise.all([
           fetch('/api/goals'),
           fetch('/api/tasks')
@@ -385,14 +414,21 @@ export default function Dashboard() {
         if (goalsResponse.ok) {
           const goalsData = await goalsResponse.json();
           setGoals(goalsData);
+        } else {
+          throw new Error('Failed to fetch goals');
         }
         
         if (tasksResponse.ok) {
           const tasksData = await tasksResponse.json();
           setTasks(tasksData);
+        } else {
+          throw new Error('Failed to fetch tasks');
         }
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
+        setError('Failed to load dashboard data. Please try refreshing the page.');
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchData();
@@ -417,18 +453,124 @@ export default function Dashboard() {
           <div style={{ display: 'grid', gap: '24px' }}>
             <ProgressSummary goals={goals} tasks={tasks} />
             <GoalCategoriesWidget goals={goals} />
+            <TimeTrackingSummary tasks={tasks} />
+            <PerformanceInsights goals={goals} tasks={tasks} />
           </div>
         );
       default:
         return (
           <div style={{ display: 'grid', gap: '24px' }}>
             <ProgressSummary goals={goals} tasks={tasks} />
+            <PerformanceInsights goals={goals} tasks={tasks} />
+            <AchievementHighlights goals={goals} tasks={tasks} />
+            <TimeTrackingSummary tasks={tasks} />
+            <RecentActivityFeed activities={[]} />
             <GoalCategoriesWidget goals={goals} />
             <QuickAccessWidget onNavigate={handleNavigate} />
           </div>
         );
     }
   };
+
+  if (isLoading) {
+    return (
+      <div style={{ 
+        display: 'flex',
+        background: '#E6F0FF',
+        minHeight: '100vh',
+        fontFamily: "'PT Sans', sans-serif"
+      }}>
+        <Sidebar />
+        <main style={{ 
+          flex: 1, 
+          padding: '24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            background: '#fff',
+            borderRadius: '12px',
+            padding: '48px',
+            textAlign: 'center',
+            boxShadow: '0 2px 8px rgba(100,149,237,0.08)'
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
+            <h2 style={{
+              margin: '0 0 8px 0',
+              fontSize: '24px',
+              color: '#333',
+              fontFamily: "'Poppins', sans-serif",
+              fontWeight: 600
+            }}>
+              Loading Dashboard
+            </h2>
+            <p style={{ margin: 0, color: '#666' }}>
+              Please wait while we load your data...
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ 
+        display: 'flex',
+        background: '#E6F0FF',
+        minHeight: '100vh',
+        fontFamily: "'PT Sans', sans-serif"
+      }}>
+        <Sidebar />
+        <main style={{ 
+          flex: 1, 
+          padding: '24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            background: '#fff',
+            borderRadius: '12px',
+            padding: '48px',
+            textAlign: 'center',
+            boxShadow: '0 2px 8px rgba(100,149,237,0.08)'
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
+            <h2 style={{
+              margin: '0 0 8px 0',
+              fontSize: '24px',
+              color: '#333',
+              fontFamily: "'Poppins', sans-serif",
+              fontWeight: 600
+            }}>
+              Error Loading Dashboard
+            </h2>
+            <p style={{ margin: '0 0 24px 0', color: '#666' }}>
+              {error}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              style={{
+                background: '#6495ED',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '12px 24px',
+                fontFamily: "'PT Sans', sans-serif",
+                fontSize: '14px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              Refresh Page
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div style={{ 

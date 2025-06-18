@@ -1,9 +1,22 @@
 import React, { useState } from 'react';
-import { FaRobot, FaFilter, FaSort, FaLightbulb } from 'react-icons/fa';
+import { FaRobot, FaFilter, FaSort, FaLightbulb, FaClock } from 'react-icons/fa';
 
 export default function AITaskFilter({ tasks = [] }) {
   const [sortBy, setSortBy] = useState('priority'); // 'priority', 'time', 'status'
   const [filterStatus, setFilterStatus] = useState('all'); // 'all', 'not-started', 'in-progress', 'done'
+
+  const getPriorityValue = (priority) => {
+    switch (priority) {
+      case 'High':
+        return 3;
+      case 'Medium':
+        return 2;
+      case 'Low':
+        return 1;
+      default:
+        return 0;
+    }
+  };
 
   const filteredTasks = tasks
     .filter(task => task.aiIntegration)
@@ -14,7 +27,7 @@ export default function AITaskFilter({ tasks = [] }) {
     .sort((a, b) => {
       switch (sortBy) {
         case 'priority':
-          return b.priority - a.priority;
+          return getPriorityValue(b.priority) - getPriorityValue(a.priority);
         case 'time':
           return parseInt(b.timeEstimate) - parseInt(a.timeEstimate);
         case 'status':
@@ -197,36 +210,47 @@ export default function AITaskFilter({ tasks = [] }) {
               {task.description}
             </div>
 
-            {task.optimizationSuggestions && task.optimizationSuggestions.length > 0 && (
-              <div style={{
-                background: '#E6F0FF',
-                borderRadius: '6px',
-                padding: '12px',
-                marginTop: '8px'
-              }}>
+            {(() => {
+              let suggestions = task.optimizationSuggestions;
+              if (typeof suggestions === 'string') {
+                try {
+                  suggestions = JSON.parse(suggestions);
+                } catch {
+                  suggestions = [];
+                }
+              }
+              if (!Array.isArray(suggestions)) suggestions = [];
+              return suggestions.length > 0 && (
                 <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  marginBottom: '8px',
-                  color: '#6495ED',
-                  fontSize: '14px',
-                  fontWeight: 500
+                  background: '#E6F0FF',
+                  borderRadius: '6px',
+                  padding: '12px',
+                  marginTop: '8px'
                 }}>
-                  <FaLightbulb /> AI Suggestions
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    marginBottom: '8px',
+                    color: '#6495ED',
+                    fontSize: '14px',
+                    fontWeight: 500
+                  }}>
+                    <FaLightbulb /> AI Suggestions
+                  </div>
+                  <ul style={{
+                    margin: 0,
+                    paddingLeft: '20px',
+                    fontSize: '13px',
+                    color: '#666'
+                  }}>
+                    {suggestions.map((suggestion, index) => (
+                      <li key={index}>{suggestion}</li>
+                    ))}
+                  </ul>
                 </div>
-                <ul style={{
-                  margin: 0,
-                  paddingLeft: '20px',
-                  fontSize: '13px',
-                  color: '#666'
-                }}>
-                  {task.optimizationSuggestions.map((suggestion, index) => (
-                    <li key={index}>{suggestion}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
+              );
+            })()}
 
             <div style={{
               display: 'flex',

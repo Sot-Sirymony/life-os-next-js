@@ -3,10 +3,11 @@ import React from 'react';
 export default function GoalProgressBoard({ goals }) {
   // Group goals by category
   const goalsByCategory = goals.reduce((acc, goal) => {
-    if (!acc[goal.category]) {
-      acc[goal.category] = [];
+    const categoryName = goal.category?.name || 'Uncategorized';
+    if (!acc[categoryName]) {
+      acc[categoryName] = [];
     }
-    acc[goal.category].push(goal);
+    acc[categoryName].push(goal);
     return acc;
   }, {});
 

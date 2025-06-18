@@ -8,12 +8,13 @@ export default function SummaryCards({ goals, tasks }) {
 
   // Calculate category-wise progress
   const categoryProgress = goals.reduce((acc, goal) => {
-    if (!acc[goal.category]) {
-      acc[goal.category] = { total: 0, completed: 0 };
+    const categoryName = goal.category?.name || 'Uncategorized';
+    if (!acc[categoryName]) {
+      acc[categoryName] = { total: 0, completed: 0 };
     }
-    acc[goal.category].total++;
+    acc[categoryName].total++;
     if (goal.status === 'Done') {
-      acc[goal.category].completed++;
+      acc[categoryName].completed++;
     }
     return acc;
   }, {});

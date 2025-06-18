@@ -30,9 +30,10 @@ export default function GoalsPage() {
             color: '#666',
             fontSize: '16px'
           }}>
-            Define, track, and achieve your life goals with AI-powered optimization.
+            Define, track, and manage your life goals with comprehensive planning and analytics.
           </p>
         </div>
+        
         <LifeGoalsBoard />
       </main>
     </div>

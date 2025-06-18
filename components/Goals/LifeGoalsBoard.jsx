@@ -1,35 +1,53 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
 import { FaPlus, FaEdit, FaTrash, FaCheck, FaTimes, FaLink, FaComment, FaShare, FaCalendar } from "react-icons/fa";
 import SubTasks from "./SubTasks";
-import { goalsApi } from "@/lib/api";
+import GoalDetailView from "./GoalDetailView";
+import GoalManagement from "./GoalManagement";
+import GoalAnalytics from "./GoalAnalytics";
+import TaskManagement from "./TaskManagement";
+import TaskAnalytics from "./TaskAnalytics";
 
-const initialStatuses = ["Not Started", "In Progress", "Done"];
-
-const categoryGroups = {
-  Foundations: [
-    { id: 'self-dev', name: 'Self-Development & Learning', icon: '📚' },
-    { id: 'health', name: 'Health & Wellness', icon: '💪' },
-    { id: 'financial', name: 'Financial Security', icon: '💰' },
-    { id: 'personal', name: 'Personal Growth', icon: '🌱' }
-  ],
-  'People & Impact': [
-    { id: 'relationships', name: 'Relationships', icon: '❤️' },
-    { id: 'community', name: 'Community Involvement', icon: '🤝' },
-    { id: 'social', name: 'Social Connection', icon: '👥' },
-    { id: 'family', name: 'Family', icon: '👨‍👩‍👧‍👦' }
-  ],
-  'Achievement & Enjoyment': [
-    { id: 'career', name: 'Career & Professional Growth', icon: '💼' },
-    { id: 'hobbies', name: 'Hobbies & Recreation', icon: '🎨' },
-    { id: 'travel', name: 'Travel & Adventure', icon: '✈️' },
-    { id: 'creative', name: 'Creative Expression', icon: '🎭' }
-  ]
+// Mock API for goals - replace with actual API calls
+const goalsApi = {
+  getAll: async () => {
+    const response = await fetch('/api/goals');
+    return response.json();
+  },
+  create: async (goal) => {
+    const response = await fetch('/api/goals', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(goal),
+    });
+    return response.json();
+  },
+  update: async (id, goal) => {
+    const response = await fetch('/api/goals', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, ...goal }),
+    });
+    return response.json();
+  },
+  delete: async (id) => {
+    const response = await fetch('/api/goals', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    return response.json();
+  },
 };
 
-// Flatten categories for the select dropdown
-const allCategories = Object.values(categoryGroups).flat().map(cat => cat.name);
+// Mock categories API
+const categoriesApi = {
+  getAll: async () => {
+    const response = await fetch('/api/categories');
+    return response.json();
+  },
+};
+
+const initialStatuses = ["Not Started", "In Progress", "Done"];
 
 function getStatusColor(status) {
   if (status === "Not Started") return "#E6F0FF";
@@ -40,19 +58,21 @@ function getStatusColor(status) {
 
 export default function LifeGoalsBoard() {
   const [goals, setGoals] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [tasks, setTasks] = useState([]);
   const [isAddingGoal, setIsAddingGoal] = useState(false);
   const [isEditingGoal, setIsEditingGoal] = useState(false);
   const [currentGoal, setCurrentGoal] = useState(null);
   const [newGoal, setNewGoal] = useState({
     title: "",
     description: "",
-    category: "Self-Development & Learning",
+    categoryId: "",
     status: "Not Started",
     progress: 0,
     timeframe: "Short",
     priority: "Medium",
     notes: "",
-    dependencies: [],
+    dependencies: "[]",
     completionDate: null
   });
   const [draggedGoal, setDraggedGoal] = useState(null);
@@ -60,6 +80,7 @@ export default function LifeGoalsBoard() {
   const [editForm, setEditForm] = useState(null);
   const [expandedGoal, setExpandedGoal] = useState(null);
   const [viewMode, setViewMode] = useState('kanban'); // 'kanban' or 'list'
+  const [activeTab, setActiveTab] = useState('board'); // 'board', 'detail', 'management', 'analytics'
   const [filters, setFilters] = useState({
     category: 'all',
     priority: 'all',
@@ -73,9 +94,11 @@ export default function LifeGoalsBoard() {
   const [showDependencies, setShowDependencies] = useState({});
   const [selectedGoal, setSelectedGoal] = useState(null);
 
-  // Fetch goals on component mount
+  // Fetch goals and categories on component mount
   useEffect(() => {
     fetchGoals();
+    fetchCategories();
+    fetchTasks();
   }, []);
 
   const fetchGoals = async () => {
@@ -84,13 +107,37 @@ export default function LifeGoalsBoard() {
       setGoals(data);
     } catch (error) {
       console.error("Failed to fetch goals:", error);
-      // You might want to show an error message to the user here
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const data = await categoriesApi.getAll();
+      setCategories(data);
+      // Set default category if available
+      if (data.length > 0 && !newGoal.categoryId) {
+        setNewGoal(prev => ({ ...prev, categoryId: data[0].id }));
+      }
+    } catch (error) {
+      console.error("Failed to fetch categories:", error);
+    }
+  };
+
+  const fetchTasks = async () => {
+    try {
+      const response = await fetch('/api/tasks');
+      if (response.ok) {
+        const data = await response.json();
+        setTasks(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch tasks:", error);
     }
   };
 
   const handleAddGoal = async () => {
     try {
-      if (!newGoal.title || !newGoal.category) {
+      if (!newGoal.title || !newGoal.categoryId) {
         console.error("Title and category are required");
         return;
       }
@@ -101,13 +148,13 @@ export default function LifeGoalsBoard() {
       setNewGoal({
         title: "",
         description: "",
-        category: "Self-Development & Learning",
+        categoryId: categories.length > 0 ? categories[0].id : "",
         status: "Not Started",
         progress: 0,
         timeframe: "Short",
         priority: "Medium",
         notes: "",
-        dependencies: [],
+        dependencies: "[]",
         completionDate: null
       });
     } catch (error) {
@@ -123,7 +170,6 @@ export default function LifeGoalsBoard() {
       setCurrentGoal(null);
     } catch (error) {
       console.error("Failed to update goal:", error);
-      // You might want to show an error message to the user here
     }
   };
 
@@ -133,7 +179,6 @@ export default function LifeGoalsBoard() {
       setGoals(goals.filter(goal => goal.id !== id));
     } catch (error) {
       console.error("Failed to delete goal:", error);
-      // You might want to show an error message to the user here
     }
   };
 
@@ -146,8 +191,16 @@ export default function LifeGoalsBoard() {
       }
     } catch (error) {
       console.error("Failed to update tasks:", error);
-      // You might want to show an error message to the user here
     }
+  };
+
+  const handleGoalClick = (goal) => {
+    setSelectedGoal(goal);
+    setActiveTab('detail');
+  };
+
+  const handleGoalsChange = (newGoals) => {
+    setGoals(newGoals);
   };
 
   function handleInput(e) {
@@ -181,717 +234,952 @@ export default function LifeGoalsBoard() {
 
   function handleEditGoal(e) {
     e.preventDefault();
-    setGoals(goals.map(g => g.id === editForm.id ? { ...editForm } : g));
+    handleUpdateGoal(editForm);
     closeModal();
   }
 
-  // Add this after the existing state declarations
-  const filteredAndSortedGoals = goals
-    .filter(goal => {
-      // Search filter
-      if (searchQuery && !goal.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-          !goal.description.toLowerCase().includes(searchQuery.toLowerCase())) {
-        return false;
-      }
-      // Existing filters
-      if (filters.category !== 'all' && goal.category !== filters.category) return false;
-      if (filters.priority !== 'all' && goal.priority !== filters.priority) return false;
-      if (filters.timeframe !== 'all' && goal.timeframe !== filters.timeframe) return false;
-      if (filters.status !== 'all' && goal.status !== filters.status) return false;
-      return true;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'priority':
-          const priorityOrder = { High: 3, Medium: 2, Low: 1 };
-          return priorityOrder[b.priority] - priorityOrder[a.priority];
-        case 'timeframe':
-          const timeframeOrder = { 'Long-Term': 3, 'Mid-Term': 2, 'Short': 1 };
-          return timeframeOrder[b.timeframe] - timeframeOrder[a.timeframe];
-        case 'title':
-          return a.title.localeCompare(b.title);
-        default:
-          return 0;
-      }
-    });
+  const getCategoryName = (categoryId) => {
+    const category = categories.find(c => c.id === categoryId);
+    return category ? category.name : 'Uncategorized';
+  };
 
-  // Add this before the return statement
+  const getCategoryColor = (categoryId) => {
+    const category = categories.find(c => c.id === categoryId);
+    return category ? category.color : '#6495ED';
+  };
+
+  const getCategoryIcon = (categoryId) => {
+    const category = categories.find(c => c.id === categoryId);
+    return category ? category.icon : '🎯';
+  };
+
   const renderProgressBar = (progress) => (
-    <div style={{ 
-      width: '100%', 
-      height: '6px', 
-      background: '#f0f0f0', 
+    <div style={{
+      width: '100%',
+      height: '6px',
+      backgroundColor: '#E6F0FF',
       borderRadius: '3px',
+      overflow: 'hidden',
       marginTop: '8px'
     }}>
-      <div style={{ 
-        width: `${progress}%`, 
-        height: '100%', 
-        background: '#6495ed', 
+      <div style={{
+        width: `${progress}%`,
+        height: '100%',
+        backgroundColor: '#6495ED',
         borderRadius: '3px',
         transition: 'width 0.3s ease'
       }} />
     </div>
   );
 
-  // Add this before the return statement
+  const renderTabNavigation = () => (
+    <div style={{ 
+      display: 'flex', 
+      gap: '8px', 
+      marginBottom: '24px',
+      borderBottom: '2px solid #E6F0FF',
+      paddingBottom: '8px'
+    }}>
+      {[
+        { id: 'board', label: 'Goals Board', icon: '📋' },
+        { id: 'detail', label: 'Goal Details', icon: '📊' },
+        { id: 'management', label: 'Goal Management', icon: '⚙️' },
+        { id: 'task-management', label: 'Task Management', icon: '📝' },
+        { id: 'analytics', label: 'Goal Analytics', icon: '📈' },
+        { id: 'task-analytics', label: 'Task Analytics', icon: '📊' }
+      ].map((tab) => (
+        <button
+          key={tab.id}
+          onClick={() => setActiveTab(tab.id)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '12px 16px',
+            background: activeTab === tab.id ? '#6495ED' : '#E6F0FF',
+            color: activeTab === tab.id ? '#fff' : '#333',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontFamily: "'PT Sans', sans-serif",
+            fontSize: '14px',
+            fontWeight: activeTab === tab.id ? 600 : 400,
+            transition: 'all 0.2s ease'
+          }}
+        >
+          <span>{tab.icon}</span>
+          <span>{tab.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+
   const renderKanbanView = () => (
-    <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', padding: '16px 0' }}>
-      {initialStatuses.map(status => (
+    <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', padding: '8px 0' }}>
+      {initialStatuses.map((status) => (
         <div
           key={status}
           style={{
             minWidth: '300px',
-            background: '#f5f5f5',
-            borderRadius: '8px',
+            background: '#f8f9fa',
+            borderRadius: '12px',
             padding: '16px',
+            border: `2px solid ${getStatusColor(status)}`
           }}
           onDragOver={(e) => e.preventDefault()}
           onDrop={() => onDrop(status)}
         >
-          <h3 style={{ marginBottom: '16px', color: '#333' }}>{status}</h3>
-          {filteredAndSortedGoals
-            .filter(goal => goal.status === status)
-            .map(goal => (
-              <div
-                key={goal.id}
-                draggable
-                onDragStart={() => onDragStart(goal)}
-                style={{
-                  background: '#fff',
-                  padding: '12px',
-                  marginBottom: '8px',
-                  borderRadius: '6px',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                  cursor: 'move',
-                }}
-              >
-                <h4 style={{ margin: '0 0 8px 0' }}>{goal.title}</h4>
-                <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#666' }}>
-                  {goal.description}
-                </p>
-                <div style={{ display: 'flex', gap: '8px', fontSize: '12px', marginBottom: '8px' }}>
-                  <span style={{ background: '#e6f0ff', padding: '2px 6px', borderRadius: '4px' }}>
-                    {goal.category}
-                  </span>
-                  <span style={{ background: '#d8bfd8', padding: '2px 6px', borderRadius: '4px' }}>
-                    {goal.priority}
-                  </span>
-                  <span style={{ background: '#6495ed', padding: '2px 6px', borderRadius: '4px' }}>
-                    {goal.timeframe}
-                  </span>
-                </div>
-                {renderProgressBar(goal.progress)}
-                <button
-                  onClick={() => setShowSubtasks({ ...showSubtasks, [goal.id]: !showSubtasks[goal.id] })}
+          <h3 style={{
+            margin: '0 0 16px 0',
+            fontSize: '18px',
+            color: '#333',
+            fontFamily: "'Poppins', sans-serif",
+            fontWeight: 600,
+            textAlign: 'center'
+          }}>
+            {status}
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {goals
+              .filter(goal => goal.status === status)
+              .map((goal) => (
+                <div
+                  key={goal.id}
+                  draggable
+                  onDragStart={() => onDragStart(goal)}
+                  onClick={() => handleGoalClick(goal)}
                   style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#6495ed',
+                    background: '#fff',
+                    borderRadius: '8px',
+                    padding: '16px',
                     cursor: 'pointer',
-                    padding: '4px 0',
-                    marginTop: '8px',
-                    fontSize: '12px'
+                    border: '2px solid #E6F0FF',
+                    transition: 'all 0.2s ease',
+                    position: 'relative'
+                  }}
+                  onMouseOver={(e) => {
+                    e.target.style.transform = 'translateY(-2px)';
+                    e.target.style.boxShadow = '0 4px 16px rgba(100,149,237,0.15)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = 'none';
                   }}
                 >
-                  {showSubtasks[goal.id] ? 'Hide Subtasks' : 'Show Subtasks'}
-                </button>
-                {showSubtasks[goal.id] && (
-                  <div style={{ marginTop: '8px' }}>
-                    <SubTasks
-                      tasks={goal.tasks || []}
-                      onTasksChange={(tasks) => handleTasksChange(goal.id, tasks)}
-                      parentGoalId={goal.id}
-                    />
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                    <div style={{
+                      fontSize: '20px',
+                      background: getCategoryColor(goal.categoryId),
+                      color: '#fff',
+                      borderRadius: '50%',
+                      width: '32px',
+                      height: '32px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      {getCategoryIcon(goal.categoryId)}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <h4 style={{
+                        margin: '0 0 8px 0',
+                        fontSize: '16px',
+                        color: '#333',
+                        fontFamily: "'Poppins', sans-serif",
+                        fontWeight: 600
+                      }}>
+                        {goal.title}
+                      </h4>
+                      {goal.description && (
+                        <p style={{
+                          margin: '0 0 8px 0',
+                          fontSize: '14px',
+                          color: '#666',
+                          fontFamily: "'PT Sans', sans-serif"
+                        }}>
+                          {goal.description}
+                        </p>
+                      )}
+                      <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                        <span style={{
+                          background: goal.priority === 'High' ? '#F44336' : goal.priority === 'Medium' ? '#FF9800' : '#4CAF50',
+                          color: '#fff',
+                          padding: '2px 6px',
+                          borderRadius: '8px',
+                          fontSize: '10px',
+                          fontWeight: 600
+                        }}>
+                          {goal.priority}
+                        </span>
+                        <span style={{
+                          background: goal.timeframe === 'Short' ? '#4CAF50' : goal.timeframe === 'Medium' ? '#FF9800' : '#6495ED',
+                          color: '#fff',
+                          padding: '2px 6px',
+                          borderRadius: '8px',
+                          fontSize: '10px',
+                          fontWeight: 600
+                        }}>
+                          {goal.timeframe}
+                        </span>
+                      </div>
+                      {renderProgressBar(goal.progress)}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
+                        <span style={{ fontSize: '12px', color: '#666' }}>
+                          Progress: {goal.progress}%
+                        </span>
+                        <span style={{ fontSize: '12px', color: '#666' }}>
+                          {getCategoryName(goal.categoryId)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
-            ))}
+                </div>
+              ))}
+          </div>
         </div>
       ))}
     </div>
   );
 
   const renderListView = () => (
-    <div style={{ padding: '16px 0' }}>
-      {filteredAndSortedGoals.map(goal => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {goals.map((goal) => (
         <div
           key={goal.id}
+          onClick={() => handleGoalClick(goal)}
           style={{
             background: '#fff',
-            padding: '16px',
-            marginBottom: '12px',
             borderRadius: '8px',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            padding: '16px',
+            cursor: 'pointer',
+            border: '2px solid #E6F0FF',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseOver={(e) => {
+            e.target.style.transform = 'translateY(-2px)';
+            e.target.style.boxShadow = '0 4px 16px rgba(100,149,237,0.15)';
+          }}
+          onMouseOut={(e) => {
+            e.target.style.transform = 'translateY(0)';
+            e.target.style.boxShadow = 'none';
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ margin: 0 }}>{goal.title}</h3>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button
-                onClick={() => openEditModal(goal)}
-                style={{ padding: '4px 8px', background: '#e6f0ff', border: 'none', borderRadius: '4px' }}
-              >
-                <FaEdit />
-              </button>
-              <button
-                onClick={() => handleDeleteGoal(goal.id)}
-                style={{ padding: '4px 8px', background: '#ffebee', border: 'none', borderRadius: '4px' }}
-              >
-                <FaTrash />
-              </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{
+              fontSize: '24px',
+              background: getCategoryColor(goal.categoryId),
+              color: '#fff',
+              borderRadius: '50%',
+              width: '48px',
+              height: '48px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              {getCategoryIcon(goal.categoryId)}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <h3 style={{
+                  margin: 0,
+                  fontSize: '18px',
+                  color: '#333',
+                  fontFamily: "'Poppins', sans-serif",
+                  fontWeight: 600
+                }}>
+                  {goal.title}
+                </h3>
+                <span style={{
+                  background: goal.status === 'Done' ? '#4CAF50' : goal.status === 'In Progress' ? '#FF9800' : '#666',
+                  color: '#fff',
+                  padding: '4px 8px',
+                  borderRadius: '12px',
+                  fontSize: '10px',
+                  fontWeight: 600
+                }}>
+                  {goal.status}
+                </span>
+              </div>
+              {goal.description && (
+                <p style={{
+                  margin: '0 0 8px 0',
+                  fontSize: '14px',
+                  color: '#666',
+                  fontFamily: "'PT Sans', sans-serif"
+                }}>
+                  {goal.description}
+                </p>
+              )}
+              <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#666' }}>
+                <span>Category: {getCategoryName(goal.categoryId)}</span>
+                <span>Priority: {goal.priority}</span>
+                <span>Timeframe: {goal.timeframe}</span>
+                <span>Progress: {goal.progress}%</span>
+              </div>
+              {renderProgressBar(goal.progress)}
             </div>
           </div>
-          <p style={{ margin: '8px 0', color: '#666' }}>{goal.description}</p>
-          <div style={{ display: 'flex', gap: '8px', fontSize: '14px', marginBottom: '8px' }}>
-            <span style={{ background: '#e6f0ff', padding: '4px 8px', borderRadius: '4px' }}>
-              {goal.category}
-            </span>
-            <span style={{ background: '#d8bfd8', padding: '4px 8px', borderRadius: '4px' }}>
-              {goal.priority}
-            </span>
-            <span style={{ background: '#6495ed', padding: '4px 8px', borderRadius: '4px' }}>
-              {goal.timeframe}
-            </span>
-            <span style={{ background: getStatusColor(goal.status), padding: '4px 8px', borderRadius: '4px' }}>
-              {goal.status}
-            </span>
-          </div>
-          {renderProgressBar(goal.progress)}
-          <button
-            onClick={() => setShowSubtasks({ ...showSubtasks, [goal.id]: !showSubtasks[goal.id] })}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#6495ed',
-              cursor: 'pointer',
-              padding: '4px 0',
-              marginTop: '8px',
-              fontSize: '12px'
-            }}
-          >
-            {showSubtasks[goal.id] ? 'Hide Subtasks' : 'Show Subtasks'}
-          </button>
-          {showSubtasks[goal.id] && (
-            <div style={{ marginTop: '8px' }}>
-              <SubTasks
-                tasks={goal.tasks || []}
-                onTasksChange={(tasks) => handleTasksChange(goal.id, tasks)}
-                parentGoalId={goal.id}
-              />
-            </div>
-          )}
         </div>
       ))}
     </div>
   );
 
-  // Add this function to group goals by category
   const groupGoalsByCategory = (goals) => {
-    const grouped = {};
-    Object.keys(categoryGroups).forEach(group => {
-      grouped[group] = goals.filter(goal => 
-        categoryGroups[group].some(cat => cat.name === goal.category)
-      );
+    const groups = {};
+    goals.forEach(goal => {
+      const categoryName = getCategoryName(goal.categoryId);
+      if (!groups[categoryName]) {
+        groups[categoryName] = [];
+      }
+      groups[categoryName].push(goal);
     });
-    return grouped;
+    return groups;
   };
 
-  // Add this function to render category groups
-  const renderCategoryGroups = (goals) => {
-    const groupedGoals = groupGoalsByCategory(goals);
-    
-    return Object.entries(groupedGoals).map(([group, groupGoals]) => (
-      <div key={group} style={{ marginBottom: '24px' }}>
-        <h2 style={{ 
-          fontSize: '18px', 
-          color: '#333', 
-          marginBottom: '16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
-          {group}
-          <span style={{ 
-            fontSize: '14px', 
-            color: '#666',
-            background: '#f5f5f5',
-            padding: '2px 8px',
-            borderRadius: '12px'
+  const renderCategoryGroups = (goals) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {Object.entries(groupGoalsByCategory(goals)).map(([categoryName, categoryGoals]) => (
+        <div key={categoryName}>
+          <h3 style={{
+            margin: '0 0 16px 0',
+            fontSize: '20px',
+            color: '#333',
+            fontFamily: "'Poppins', sans-serif",
+            fontWeight: 600
           }}>
-            {groupGoals.length} goals
-          </span>
-        </h2>
-        {viewMode === 'kanban' ? renderKanbanView(groupGoals) : renderListView(groupGoals)}
-      </div>
-    ));
-  };
-
-  // Update the renderKanbanView and renderListView functions to include new features
-  const renderGoalCard = (goal) => (
-    <div
-      key={goal.id}
-      draggable
-      onDragStart={() => onDragStart(goal)}
-      style={{
-        background: '#fff',
-        padding: '12px',
-        marginBottom: '8px',
-        borderRadius: '6px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        cursor: 'move',
-      }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <h4 style={{ margin: '0 0 8px 0' }}>{goal.title}</h4>
-        <div style={{ display: 'flex', gap: '4px' }}>
-          <button
-            onClick={() => setShowNotes({ ...showNotes, [goal.id]: !showNotes[goal.id] })}
-            style={{ padding: '4px', background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            <FaComment color={showNotes[goal.id] ? '#6495ed' : '#666'} />
-          </button>
-          <button
-            onClick={() => setShowDependencies({ ...showDependencies, [goal.id]: !showDependencies[goal.id] })}
-            style={{ padding: '4px', background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            <FaLink color={showDependencies[goal.id] ? '#6495ed' : '#666'} />
-          </button>
-          <button
-            onClick={() => setSelectedGoal(goal)}
-            style={{ padding: '4px', background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            <FaShare color="#666" />
-          </button>
-        </div>
-      </div>
-      
-      <p style={{ margin: '0 0 8px 0', fontSize: '14px', color: '#666' }}>
-        {goal.description}
-      </p>
-      
-      <div style={{ display: 'flex', gap: '8px', fontSize: '12px', marginBottom: '8px' }}>
-        <span style={{ background: '#e6f0ff', padding: '2px 6px', borderRadius: '4px' }}>
-          {goal.category}
-        </span>
-        <span style={{ background: '#d8bfd8', padding: '2px 6px', borderRadius: '4px' }}>
-          {goal.priority}
-        </span>
-        <span style={{ background: '#6495ed', padding: '2px 6px', borderRadius: '4px' }}>
-          {goal.timeframe}
-        </span>
-        {goal.completionDate && (
-          <span style={{ 
-            background: '#e6ffe6', 
-            padding: '2px 6px', 
-            borderRadius: '4px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px'
-          }}>
-            <FaCalendar size={12} />
-            {new Date(goal.completionDate).toLocaleDateString()}
-          </span>
-        )}
-      </div>
-
-      {renderProgressBar(goal.progress)}
-
-      {/* Notes Section */}
-      {showNotes[goal.id] && (
-        <div style={{ marginTop: '8px', padding: '8px', background: '#f8f9fa', borderRadius: '4px' }}>
-          <textarea
-            value={goal.notes || ''}
-            onChange={(e) => handleUpdateGoal({ ...goal, notes: e.target.value })}
-            placeholder="Add notes..."
-            style={{
-              width: '100%',
-              minHeight: '60px',
-              padding: '8px',
-              borderRadius: '4px',
-              border: '1px solid #ddd',
-              resize: 'vertical'
-            }}
-          />
-        </div>
-      )}
-
-      {/* Dependencies Section */}
-      {showDependencies[goal.id] && (
-        <div style={{ marginTop: '8px', padding: '8px', background: '#f8f9fa', borderRadius: '4px' }}>
-          <select
-            value=""
-            onChange={(e) => {
-              if (e.target.value) {
-                handleUpdateGoal({
-                  ...goal,
-                  dependencies: [...(goal.dependencies || []), e.target.value]
-                });
-              }
-            }}
-            style={{
-              width: '100%',
-              padding: '4px',
-              borderRadius: '4px',
-              border: '1px solid #ddd'
-            }}
-          >
-            <option value="">Add dependency...</option>
-            {goals
-              .filter(g => g.id !== goal.id && !(goal.dependencies || []).includes(g.id))
-              .map(g => (
-                <option key={g.id} value={g.id}>{g.title}</option>
-              ))}
-          </select>
-          {(goal.dependencies || []).map(depId => {
-            const depGoal = goals.find(g => g.id === depId);
-            return depGoal ? (
-              <div key={depId} style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginTop: '4px',
-                padding: '4px',
-                background: '#fff',
-                borderRadius: '4px'
-              }}>
-                <span>{depGoal.title}</span>
-                <button
-                  onClick={() => handleUpdateGoal({
-                    ...goal,
-                    dependencies: goal.dependencies.filter(id => id !== depId)
-                  })}
-                  style={{ background: 'none', border: 'none', color: '#ff4444', cursor: 'pointer' }}
-                >
-                  <FaTimes />
-                </button>
+            {categoryName}
+          </h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+            {categoryGoals.map((goal) => (
+              <div
+                key={goal.id}
+                onClick={() => handleGoalClick(goal)}
+                style={{
+                  background: '#fff',
+                  borderRadius: '8px',
+                  padding: '16px',
+                  cursor: 'pointer',
+                  border: '2px solid #E6F0FF',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = '0 4px 16px rgba(100,149,237,0.15)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = 'none';
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                  <div style={{
+                    fontSize: '20px',
+                    background: getCategoryColor(goal.categoryId),
+                    color: '#fff',
+                    borderRadius: '50%',
+                    width: '32px',
+                    height: '32px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    {getCategoryIcon(goal.categoryId)}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <h4 style={{
+                      margin: '0 0 8px 0',
+                      fontSize: '16px',
+                      color: '#333',
+                      fontFamily: "'Poppins', sans-serif",
+                      fontWeight: 600
+                    }}>
+                      {goal.title}
+                    </h4>
+                    {goal.description && (
+                      <p style={{
+                        margin: '0 0 8px 0',
+                        fontSize: '14px',
+                        color: '#666',
+                        fontFamily: "'PT Sans', sans-serif"
+                      }}>
+                        {goal.description}
+                      </p>
+                    )}
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                      <span style={{
+                        background: goal.priority === 'High' ? '#F44336' : goal.priority === 'Medium' ? '#FF9800' : '#4CAF50',
+                        color: '#fff',
+                        padding: '2px 6px',
+                        borderRadius: '8px',
+                        fontSize: '10px',
+                        fontWeight: 600
+                      }}>
+                        {goal.priority}
+                      </span>
+                      <span style={{
+                        background: goal.status === 'Done' ? '#4CAF50' : goal.status === 'In Progress' ? '#FF9800' : '#666',
+                        color: '#fff',
+                        padding: '2px 6px',
+                        borderRadius: '8px',
+                        fontSize: '10px',
+                        fontWeight: 600
+                      }}>
+                        {goal.status}
+                      </span>
+                    </div>
+                    {renderProgressBar(goal.progress)}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
+                      <span style={{ fontSize: '12px', color: '#666' }}>
+                        Progress: {goal.progress}%
+                      </span>
+                      <span style={{ fontSize: '12px', color: '#666' }}>
+                        {goal.timeframe}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            ) : null;
-          })}
+            ))}
+          </div>
         </div>
-      )}
-
-      {/* Subtasks Section */}
-      <button
-        onClick={() => setShowSubtasks({ ...showSubtasks, [goal.id]: !showSubtasks[goal.id] })}
-        style={{
-          background: 'none',
-          border: 'none',
-          color: '#6495ed',
-          cursor: 'pointer',
-          padding: '4px 0',
-          marginTop: '8px',
-          fontSize: '12px'
-        }}
-      >
-        {showSubtasks[goal.id] ? 'Hide Subtasks' : 'Show Subtasks'}
-      </button>
-      {showSubtasks[goal.id] && (
-        <div style={{ marginTop: '8px' }}>
-          <SubTasks
-            tasks={goal.tasks || []}
-            onTasksChange={(tasks) => handleTasksChange(goal.id, tasks)}
-            parentGoalId={goal.id}
-          />
-        </div>
-      )}
+      ))}
     </div>
   );
 
-  // Add sharing modal
-  const renderSharingModal = () => (
-    selectedGoal && (
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(0,0,0,0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
+  const renderGoalCard = (goal) => (
+    <div
+      key={goal.id}
+      style={{
+        background: '#fff',
+        borderRadius: '8px',
+        padding: '16px',
+        border: '2px solid #E6F0FF',
+        marginBottom: '12px'
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
         <div style={{
-          background: '#fff',
-          padding: '24px',
-          borderRadius: '8px',
-          width: '400px',
-          maxWidth: '90%'
+          fontSize: '20px',
+          background: getCategoryColor(goal.categoryId),
+          color: '#fff',
+          borderRadius: '50%',
+          width: '32px',
+          height: '32px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0
         }}>
-          <h3>Share Goal</h3>
-          <p>Share "{selectedGoal.title}" with others</p>
-          <div style={{ marginTop: '16px' }}>
-            <input
-              type="email"
-              placeholder="Enter email address"
-              style={{
-                width: '100%',
-                padding: '8px',
-                borderRadius: '4px',
-                border: '1px solid #ccc',
-                marginBottom: '8px'
-              }}
-            />
-            <button
-              onClick={() => {
-                // Implement sharing logic here
-                setSelectedGoal(null);
-              }}
-              style={{
-                background: '#6495ed',
-                color: '#fff',
-                border: 'none',
-                padding: '8px 16px',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Share
-            </button>
+          {getCategoryIcon(goal.categoryId)}
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <h4 style={{
+              margin: 0,
+              fontSize: '16px',
+              color: '#333',
+              fontFamily: "'Poppins', sans-serif",
+              fontWeight: 600
+            }}>
+              {goal.title}
+            </h4>
+            <span style={{
+              background: goal.status === 'Done' ? '#4CAF50' : goal.status === 'In Progress' ? '#FF9800' : '#666',
+              color: '#fff',
+              padding: '2px 6px',
+              borderRadius: '8px',
+              fontSize: '10px',
+              fontWeight: 600
+            }}>
+              {goal.status}
+            </span>
+          </div>
+          {goal.description && (
+            <p style={{
+              margin: '0 0 8px 0',
+              fontSize: '14px',
+              color: '#666',
+              fontFamily: "'PT Sans', sans-serif"
+            }}>
+              {goal.description}
+            </p>
+          )}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+            <span style={{
+              background: goal.priority === 'High' ? '#F44336' : goal.priority === 'Medium' ? '#FF9800' : '#4CAF50',
+              color: '#fff',
+              padding: '2px 6px',
+              borderRadius: '8px',
+              fontSize: '10px',
+              fontWeight: 600
+            }}>
+              {goal.priority}
+            </span>
+            <span style={{
+              background: goal.timeframe === 'Short' ? '#4CAF50' : goal.timeframe === 'Medium' ? '#FF9800' : '#6495ED',
+              color: '#fff',
+              padding: '2px 6px',
+              borderRadius: '8px',
+              fontSize: '10px',
+              fontWeight: 600
+            }}>
+              {goal.timeframe}
+            </span>
+          </div>
+          {renderProgressBar(goal.progress)}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
+            <span style={{ fontSize: '12px', color: '#666' }}>
+              Progress: {goal.progress}%
+            </span>
+            <span style={{ fontSize: '12px', color: '#666' }}>
+              {getCategoryName(goal.categoryId)}
+            </span>
           </div>
         </div>
       </div>
-    )
+    </div>
+  );
+
+  const renderSharingModal = () => (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100vw',
+      height: '100vh',
+      background: 'rgba(0,0,0,0.18)',
+      zIndex: 3000,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }}>
+      <div style={{
+        background: '#fff',
+        borderRadius: '12px',
+        padding: '24px',
+        maxWidth: '500px',
+        width: '100%',
+        boxShadow: '0 4px 24px rgba(100,149,237,0.18)',
+        fontFamily: "'PT Sans', sans-serif"
+      }}>
+        <h3 style={{
+          margin: '0 0 16px 0',
+          fontSize: '18px',
+          color: '#333',
+          fontFamily: "'Poppins', sans-serif",
+          fontWeight: 600
+        }}>
+          Share Goal
+        </h3>
+        <p style={{
+          margin: '0 0 16px 0',
+          color: '#666',
+          fontSize: '14px'
+        }}>
+          Share this goal with others or export it for backup.
+        </p>
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+          <button
+            onClick={() => {/* Handle share */}}
+            style={{
+              background: '#6495ED',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              padding: '10px 20px',
+              fontFamily: "'PT Sans', sans-serif",
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            Share
+          </button>
+          <button
+            onClick={() => {/* Handle export */}}
+            style={{
+              background: '#4CAF50',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              padding: '10px 20px',
+              fontFamily: "'PT Sans', sans-serif",
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            Export
+          </button>
+          <button
+            onClick={() => {/* Close modal */}}
+            style={{
+              background: '#eee',
+              color: '#333',
+              border: 'none',
+              borderRadius: '6px',
+              padding: '10px 20px',
+              fontFamily: "'PT Sans', sans-serif",
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
   );
 
   return (
-    <div style={{
-      background: '#fff',
-      borderRadius: '12px',
-      padding: '24px',
-      boxShadow: '0 2px 8px rgba(100,149,237,0.08)'
-    }}>
-      {/* Search and View Controls */}
-      <div style={{ marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {/* Search */}
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <input
-            type="text"
-            placeholder="Search goals..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+    <div style={{ padding: '20px' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <h2 style={{ fontFamily: "'Poppins', sans-serif", color: '#6495ED', margin: 0 }}>Life Goals</h2>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button
+            onClick={() => setViewMode(viewMode === 'kanban' ? 'list' : 'kanban')}
             style={{
-              flex: 1,
-              padding: '8px',
-              borderRadius: '4px',
-              border: '1px solid #ccc',
-              minWidth: '200px'
+              background: '#E6F0FF',
+              color: '#333',
+              border: 'none',
+              borderRadius: '6px',
+              padding: '8px 16px',
+              fontFamily: "'PT Sans', sans-serif",
+              cursor: 'pointer',
+              fontSize: '14px'
             }}
-          />
+          >
+            {viewMode === 'kanban' ? 'List View' : 'Kanban View'}
+          </button>
+          <button
+            onClick={() => setIsAddingGoal(true)}
+            style={{
+              background: '#6495ED',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              padding: '8px 16px',
+              fontFamily: "'Poppins', sans-serif",
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+          >
+            Add Goal
+          </button>
         </div>
+      </div>
 
-        {/* View Controls */}
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              onClick={() => setViewMode('kanban')}
-              style={{
-                padding: '8px 16px',
-                background: viewMode === 'kanban' ? '#6495ed' : '#f5f5f5',
-                color: viewMode === 'kanban' ? '#fff' : '#333',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Kanban View
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              style={{
-                padding: '8px 16px',
-                background: viewMode === 'list' ? '#6495ed' : '#f5f5f5',
-                color: viewMode === 'list' ? '#fff' : '#333',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              List View
-            </button>
-          </div>
+      {/* Tab Navigation */}
+      {renderTabNavigation()}
 
-          {/* Filters */}
-          <div style={{ display: 'flex', gap: '8px' }}>
+      {/* Tab Content */}
+      {activeTab === 'board' && (
+        <div>
+          {/* View Mode Controls */}
+          <div style={{ 
+            display: 'flex', 
+            gap: '16px', 
+            marginBottom: '24px',
+            padding: '16px',
+            background: '#f8f9fa',
+            borderRadius: '8px'
+          }}>
             <select
               value={filters.category}
               onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-              style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+              style={{
+                padding: '8px 12px',
+                borderRadius: '6px',
+                border: '1px solid #ccc',
+                fontFamily: "'PT Sans', sans-serif",
+                fontSize: '14px'
+              }}
             >
               <option value="all">All Categories</option>
-              {allCategories.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
+              {categories.map(category => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
               ))}
             </select>
+
             <select
               value={filters.priority}
               onChange={(e) => setFilters({ ...filters, priority: e.target.value })}
-              style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+              style={{
+                padding: '8px 12px',
+                borderRadius: '6px',
+                border: '1px solid #ccc',
+                fontFamily: "'PT Sans', sans-serif",
+                fontSize: '14px'
+              }}
             >
               <option value="all">All Priorities</option>
               <option value="High">High</option>
               <option value="Medium">Medium</option>
               <option value="Low">Low</option>
             </select>
+
             <select
               value={filters.timeframe}
               onChange={(e) => setFilters({ ...filters, timeframe: e.target.value })}
-              style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+              style={{
+                padding: '8px 12px',
+                borderRadius: '6px',
+                border: '1px solid #ccc',
+                fontFamily: "'PT Sans', sans-serif",
+                fontSize: '14px'
+              }}
             >
               <option value="all">All Timeframes</option>
-              <option value="Short">Short</option>
-              <option value="Mid">Mid</option>
-              <option value="Long-Term">Long-Term</option>
+              <option value="Short">Short-term</option>
+              <option value="Medium">Medium-term</option>
+              <option value="Long">Long-term</option>
             </select>
-            <select
-              value={filters.status}
-              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-              style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
-            >
-              <option value="all">All Statuses</option>
-              {initialStatuses.map(status => (
-                <option key={status} value={status}>{status}</option>
-              ))}
-            </select>
+
+            <input
+              type="text"
+              placeholder="Search goals..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                padding: '8px 12px',
+                borderRadius: '6px',
+                border: '1px solid #ccc',
+                fontFamily: "'PT Sans', sans-serif",
+                fontSize: '14px',
+                flex: 1
+              }}
+            />
           </div>
 
-          {/* Sort */}
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            style={{ padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
-          >
-            <option value="priority">Sort by Priority</option>
-            <option value="timeframe">Sort by Timeframe</option>
-            <option value="title">Sort by Title</option>
-          </select>
+          {/* Goals Display */}
+          {viewMode === 'kanban' ? renderKanbanView() : renderListView()}
         </div>
-      </div>
+      )}
 
-      {/* Add Goal Form */}
-      <form onSubmit={(e) => { e.preventDefault(); handleAddGoal(); }} style={{ display: "flex", flexWrap: "wrap", gap: 16, marginBottom: 24, background: "#fff", borderRadius: 10, padding: 16, boxShadow: "0 2px 8px rgba(100,149,237,0.08)" }}>
-        <input 
-          name="title" 
-          value={newGoal.title} 
-          onChange={handleInput} 
-          placeholder="Goal Title" 
-          required 
-          style={{ flex: 2, minWidth: 120, padding: 8, borderRadius: 6, border: "1px solid #ccc", fontFamily: "'PT Sans', sans-serif" }} 
-        />
-        <input 
-          name="description" 
-          value={newGoal.description} 
-          onChange={handleInput} 
-          placeholder="Description" 
-          style={{ flex: 2, minWidth: 120, padding: 8, borderRadius: 6, border: "1px solid #ccc", fontFamily: "'PT Sans', sans-serif" }} 
-        />
-        <select 
-          name="category" 
-          value={newGoal.category} 
-          onChange={handleInput} 
-          required
-          style={{ flex: 1, minWidth: 120, padding: 8, borderRadius: 6, border: "1px solid #ccc" }}
-        >
-          {allCategories.map(cat => (
-            <option key={cat} value={cat}>{cat}</option>
-          ))}
-        </select>
-        <select 
-          name="timeframe" 
-          value={newGoal.timeframe} 
-          onChange={handleInput} 
-          style={{ flex: 1, minWidth: 100, padding: 8, borderRadius: 6, border: "1px solid #ccc" }}
-        >
-          <option value="Short">Short</option>
-          <option value="Mid">Mid</option>
-          <option value="Long">Long</option>
-        </select>
-        <select 
-          name="priority" 
-          value={newGoal.priority} 
-          onChange={handleInput} 
-          style={{ flex: 1, minWidth: 100, padding: 8, borderRadius: 6, border: "1px solid #ccc" }}
-        >
-          <option value="High">High</option>
-          <option value="Medium">Medium</option>
-          <option value="Low">Low</option>
-        </select>
-        <input
-          type="date"
-          name="completionDate"
-          value={newGoal.completionDate || ''}
-          onChange={handleInput}
-          style={{ flex: 1, minWidth: 120, padding: 8, borderRadius: 6, border: "1px solid #ccc" }}
-        />
-        <button 
-          type="submit" 
-          style={{ 
-            background: "#6495ED", 
-            color: "white", 
-            border: "none", 
-            borderRadius: 6, 
-            padding: "8px 18px", 
-            fontFamily: "'Poppins', sans-serif", 
-            fontWeight: 600, 
-            cursor: "pointer" 
+      {activeTab === 'detail' && selectedGoal && (
+        <GoalDetailView
+          goal={selectedGoal}
+          onClose={() => setSelectedGoal(null)}
+          onEdit={(goal) => {
+            setSelectedGoal(null);
+            setActiveTab('management');
           }}
-        >
-          Add Goal
-        </button>
-      </form>
+          onDelete={(goal) => {
+            handleDeleteGoal(goal.id);
+            setSelectedGoal(null);
+          }}
+          onUpdateProgress={(updatedGoal) => {
+            handleUpdateGoal(updatedGoal);
+            setSelectedGoal(updatedGoal);
+          }}
+        />
+      )}
 
-      {/* View Content */}
-      {renderCategoryGroups(filteredAndSortedGoals)}
+      {activeTab === 'management' && (
+        <GoalManagement
+          goals={goals}
+          onGoalsChange={handleGoalsChange}
+        />
+      )}
 
-      {/* Edit Modal */}
-      {modalGoal && (
+      {activeTab === 'analytics' && (
+        <GoalAnalytics
+          goals={goals}
+          categories={categories}
+          tasks={tasks}
+        />
+      )}
+
+      {activeTab === 'task-management' && (
+        <TaskManagement
+          tasks={tasks}
+          goals={goals}
+          onTasksChange={setTasks}
+          onGoalsChange={setGoals}
+        />
+      )}
+
+      {activeTab === 'task-analytics' && (
+        <TaskAnalytics
+          tasks={tasks}
+          goals={goals}
+          categories={categories}
+        />
+      )}
+
+      {/* Add Goal Modal */}
+      {isAddingGoal && (
         <div style={{
           position: 'fixed',
           top: 0,
           left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.5)',
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(0,0,0,0.18)',
+          zIndex: 3000,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center'
         }}>
           <div style={{
             background: '#fff',
+            borderRadius: '12px',
             padding: '24px',
-            borderRadius: '8px',
-            width: '500px',
-            maxWidth: '90%'
+            minWidth: '400px',
+            maxWidth: '90vw',
+            boxShadow: '0 4px 24px rgba(100,149,237,0.18)',
+            fontFamily: "'PT Sans', sans-serif"
           }}>
-            <h2>Edit Goal</h2>
-            <form onSubmit={handleEditGoal}>
-              <input name="title" value={editForm.title} onChange={handleEditInput} required style={{ padding: 8, borderRadius: 6, border: "1px solid #ccc" }} />
-              <input name="description" value={editForm.description} onChange={handleEditInput} style={{ padding: 8, borderRadius: 6, border: "1px solid #ccc" }} />
-              <select name="category" value={editForm.category} onChange={handleEditInput} style={{ padding: 8, borderRadius: 6, border: "1px solid #ccc" }}>
-                {allCategories.map(cat => <option key={cat}>{cat}</option>)}
-              </select>
-              <select name="timeframe" value={editForm.timeframe} onChange={handleEditInput} style={{ padding: 8, borderRadius: 6, border: "1px solid #ccc" }}>
-                <option>Short</option>
-                <option>Mid</option>
-                <option>Long</option>
-              </select>
-              <select name="priority" value={editForm.priority} onChange={handleEditInput} style={{ padding: 8, borderRadius: 6, border: "1px solid #ccc" }}>
-                <option>High</option>
-                <option>Medium</option>
-                <option>Low</option>
-              </select>
-              <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
-                <button type="submit" style={{ background: "#6495ED", color: "white", border: "none", borderRadius: 6, padding: "8px 18px", fontFamily: "'Poppins', sans-serif", fontWeight: 600, cursor: "pointer" }}>Save</button>
-                <button type="button" onClick={handleDeleteGoal} style={{ background: "#eee", color: "#d00", border: "none", borderRadius: 6, padding: "8px 18px", fontFamily: "'Poppins', sans-serif", fontWeight: 600, cursor: "pointer" }}>Delete</button>
+            <h3 style={{ 
+              fontFamily: "'Poppins', sans-serif",
+              color: '#6495ED',
+              marginBottom: '16px'
+            }}>
+              Add New Goal
+            </h3>
+            <form onSubmit={(e) => { e.preventDefault(); handleAddGoal(); }} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <input
+                type="text"
+                name="title"
+                value={newGoal.title}
+                onChange={handleInput}
+                placeholder="Goal Title"
+                required
+                style={{
+                  padding: '12px',
+                  borderRadius: '6px',
+                  border: '1px solid #ccc',
+                  fontFamily: "'PT Sans', sans-serif"
+                }}
+              />
+              <textarea
+                name="description"
+                value={newGoal.description}
+                onChange={handleInput}
+                placeholder="Goal Description (optional)"
+                rows="3"
+                style={{
+                  padding: '12px',
+                  borderRadius: '6px',
+                  border: '1px solid #ccc',
+                  fontFamily: "'PT Sans', sans-serif",
+                  resize: 'vertical'
+                }}
+              />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <select
+                  name="categoryId"
+                  value={newGoal.categoryId}
+                  onChange={handleInput}
+                  required
+                  style={{
+                    padding: '12px',
+                    borderRadius: '6px',
+                    border: '1px solid #ccc',
+                    fontFamily: "'PT Sans', sans-serif"
+                  }}
+                >
+                  <option value="">Select Category</option>
+                  {categories.map(category => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  name="timeframe"
+                  value={newGoal.timeframe}
+                  onChange={handleInput}
+                  required
+                  style={{
+                    padding: '12px',
+                    borderRadius: '6px',
+                    border: '1px solid #ccc',
+                    fontFamily: "'PT Sans', sans-serif"
+                  }}
+                >
+                  <option value="Short">Short-term</option>
+                  <option value="Medium">Medium-term</option>
+                  <option value="Long">Long-term</option>
+                </select>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <select
+                  name="priority"
+                  value={newGoal.priority}
+                  onChange={handleInput}
+                  required
+                  style={{
+                    padding: '12px',
+                    borderRadius: '6px',
+                    border: '1px solid #ccc',
+                    fontFamily: "'PT Sans', sans-serif"
+                  }}
+                >
+                  <option value="Low">Low Priority</option>
+                  <option value="Medium">Medium Priority</option>
+                  <option value="High">High Priority</option>
+                </select>
+                <input
+                  type="number"
+                  name="progress"
+                  value={newGoal.progress}
+                  onChange={handleInput}
+                  placeholder="Progress (0-100)"
+                  min="0"
+                  max="100"
+                  required
+                  style={{
+                    padding: '12px',
+                    borderRadius: '6px',
+                    border: '1px solid #ccc',
+                    fontFamily: "'PT Sans', sans-serif"
+                  }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                <button
+                  type="submit"
+                  style={{
+                    background: '#6495ED',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '12px 24px',
+                    fontFamily: "'Poppins', sans-serif",
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    flex: 1
+                  }}
+                >
+                  Add Goal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsAddingGoal(false)}
+                  style={{
+                    background: '#eee',
+                    color: '#333',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '12px 24px',
+                    fontFamily: "'Poppins', sans-serif",
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    flex: 1
+                  }}
+                >
+                  Cancel
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
-
-      {/* Sharing Modal */}
-      {renderSharingModal()}
     </div>
   );
 } 

@@ -21,7 +21,9 @@ model User {
   updatedAt DateTime @updatedAt
   goals     Goal[]
   tasks     Task[]
+  categories Category[]
   preferences UserPreferences?
+  activities Activity[]
 }
 
 model UserPreferences {
@@ -30,22 +32,48 @@ model UserPreferences {
   user      User     @relation(fields: [userId], references: [id])
   theme     String   @default("light")
   notifications Boolean @default(true)
+  aiOptimization Boolean @default(true)
+  weeklyReview Boolean @default(true)
+  dailyReminders Boolean @default(true)
+  language  String   @default("en")
+  timezone  String   @default("UTC")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  icon        String
+  color       String   @default("#6495ED")
+  isCustom    Boolean  @default(false)
+  isArchived  Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  goals       Goal[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Goal {
   id          String   @id @default(uuid())
   title       String
   description String?
-  category    String
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
   status      String   @default("Not Started")
   progress    Int      @default(0)
   timeframe   String   @default("Short")
   priority    String   @default("Medium")
+  notes       String?
+  dependencies String? // JSON array of goal IDs
+  completionDate DateTime?
   userId      String
   user        User     @relation(fields: [userId], references: [id])
   tasks       Task[]
+  activities  Activity[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -54,17 +82,35 @@ model Task {
   id          String   @id @default(uuid())
   title       String
   description String?
-  status      String   @default("pending")
-  priority    String   @default("medium")
+  status      String   @default("Not Started")
+  priority    String   @default("Medium")
   timeEstimate Int?
+  timeSpent   Int?     @default(0)
   tools       String?
+  dueDate     DateTime?
+  notes       String?
   aiIntegration Boolean @default(false)
-  optimizationSuggestions String?
+  optimizationSuggestions String? // JSON array of suggestions
   scheduledTime DateTime?
   goalId      String?
   goal        Goal?    @relation(fields: [goalId], references: [id])
   userId      String
   user        User     @relation(fields: [userId], references: [id])
+  activities  Activity[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Activity {
+  id          String   @id @default(uuid())
+  type        String   // 'goal_created', 'goal_updated', 'goal_completed', 'task_created', 'task_completed', etc.
+  description String
+  metadata    String?  // JSON object with additional data
+  goalId      String?
+  goal        Goal?    @relation(fields: [goalId], references: [id])
+  taskId      String?
+  task        Task?    @relation(fields: [taskId], references: [id])
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
 }
