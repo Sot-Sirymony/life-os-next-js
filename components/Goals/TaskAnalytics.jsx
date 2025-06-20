@@ -1,5 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { FaChartLine, FaClock, FaCheckCircle, FaRobot, FaExclamationTriangle } from 'react-icons/fa';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+} from 'chart.js';
+import { Line, Bar, Pie, Doughnut } from 'react-chartjs-2';
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 export default function TaskAnalytics({ tasks, goals, categories }) {
   const [selectedTimeframe, setSelectedTimeframe] = useState('all'); // all, week, month, quarter, year
@@ -13,6 +41,43 @@ export default function TaskAnalytics({ tasks, goals, categories }) {
       setIsLoading(false);
     }
   }, [tasks, goals, categories]);
+
+  // Add error boundary for chart rendering
+  const renderChart = (ChartComponent, data, options) => {
+    try {
+      // Check if data is valid
+      if (!data || !data.labels || !data.datasets || data.labels.length === 0) {
+        return (
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            height: '100%',
+            color: '#666',
+            fontFamily: "'PT Sans', sans-serif"
+          }}>
+            No data available
+          </div>
+        );
+      }
+      
+      return <ChartComponent data={data} options={options} />;
+    } catch (err) {
+      console.error('Chart rendering error:', err);
+      return (
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          height: '100%',
+          color: '#F44336',
+          fontFamily: "'PT Sans', sans-serif"
+        }}>
+          Chart error
+        </div>
+      );
+    }
+  };
 
   const calculateTaskStats = () => {
     const totalTasks = tasks.length;
@@ -131,8 +196,8 @@ export default function TaskAnalytics({ tasks, goals, categories }) {
       });
       
       const completedOnDate = tasksOnDate.filter(task => {
-        if (task.status === 'Done' && task.updatedAt) {
-          const completionDate = new Date(task.updatedAt);
+        if (task.status === 'Done' && task.completedAt) {
+          const completionDate = new Date(task.completedAt);
           return completionDate <= date;
         }
         return false;
@@ -185,6 +250,22 @@ export default function TaskAnalytics({ tasks, goals, categories }) {
   const progressData = calculateProgressOverTime();
   const categoryAnalytics = calculateCategoryTaskAnalytics();
 
+  // Debug logging
+  console.log('TaskAnalytics Debug:', {
+    totalTasks: stats.totalTasks,
+    completedTasks: stats.completedTasks,
+    inProgressTasks: stats.inProgressTasks,
+    notStartedTasks: stats.notStartedTasks,
+    completionRate: stats.completionRate,
+    totalTimeSpent: stats.totalTimeSpent,
+    priorityStats: stats.priorityStats,
+    aiTasks: stats.aiTasks,
+    aiCompletionRate: stats.aiCompletionRate,
+    goalStats: stats.goalStats.length,
+    categoryAnalytics: categoryAnalytics.length,
+    progressDataPoints: progressData.length
+  });
+
   const getPriorityColor = (priority) => {
     switch (priority) {
       case 'High': return '#F44336';
@@ -201,6 +282,178 @@ export default function TaskAnalytics({ tasks, goals, categories }) {
     return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
   };
 
+  // Chart data configurations
+  const taskStatusChartData = {
+    labels: ['Completed', 'In Progress', 'Not Started'],
+    datasets: [{
+      data: [
+        stats.completedTasks || 0, 
+        stats.inProgressTasks || 0, 
+        stats.notStartedTasks || 0
+      ],
+      backgroundColor: ['#4CAF50', '#FF9800', '#F44336'],
+      borderColor: ['#4CAF50', '#FF9800', '#F44336'],
+      borderWidth: 2,
+    }]
+  };
+
+  const taskPriorityChartData = {
+    labels: Object.keys(stats.priorityStats).length > 0 ? Object.keys(stats.priorityStats) : ['No Priority Data'],
+    datasets: [{
+      data: Object.keys(stats.priorityStats).length > 0 ? Object.values(stats.priorityStats) : [1],
+      backgroundColor: Object.keys(stats.priorityStats).length > 0 ? Object.keys(stats.priorityStats).map(getPriorityColor) : ['#666'],
+      borderColor: Object.keys(stats.priorityStats).length > 0 ? Object.keys(stats.priorityStats).map(getPriorityColor) : ['#666'],
+      borderWidth: 2,
+    }]
+  };
+
+  const timeAccuracyChartData = {
+    labels: ['Over Estimated', 'Accurate', 'Under Estimated'],
+    datasets: [{
+      data: [
+        timeAnalysis.overEstimated.length || 0, 
+        timeAnalysis.accurate.length || 0, 
+        timeAnalysis.underEstimated.length || 0
+      ],
+      backgroundColor: ['#F44336', '#4CAF50', '#FF9800'],
+      borderColor: ['#F44336', '#4CAF50', '#FF9800'],
+      borderWidth: 2,
+    }]
+  };
+
+  const progressLineData = {
+    labels: progressData.length > 0 ? progressData.map(d => d.date) : ['No Data'],
+    datasets: [{
+      label: 'Task Completion Rate (%)',
+      data: progressData.length > 0 ? progressData.map(d => d.progress) : [0],
+      borderColor: '#6495ED',
+      backgroundColor: 'rgba(100, 149, 237, 0.1)',
+      borderWidth: 3,
+      fill: true,
+      tension: 0.4,
+      pointRadius: 4,
+      pointHoverRadius: 6,
+    }]
+  };
+
+  const goalTaskBarData = {
+    labels: stats.goalStats
+      .filter(goal => goal.totalTasks > 0)
+      .sort((a, b) => b.completionRate - a.completionRate)
+      .slice(0, 10)
+      .map(goal => goal.title.length > 20 ? goal.title.substring(0, 20) + '...' : goal.title),
+    datasets: [{
+      label: 'Task Completion Rate (%)',
+      data: stats.goalStats
+        .filter(goal => goal.totalTasks > 0)
+        .sort((a, b) => b.completionRate - a.completionRate)
+        .slice(0, 10)
+        .map(goal => goal.completionRate),
+      backgroundColor: '#6495ED',
+      borderColor: '#6495ED',
+      borderWidth: 2,
+      borderRadius: 4,
+    }]
+  };
+
+  const categoryTaskBarData = {
+    labels: categoryAnalytics
+      .filter(category => category.totalTasks > 0)
+      .map(category => category.name),
+    datasets: [{
+      label: 'Task Completion Rate (%)',
+      data: categoryAnalytics
+        .filter(category => category.totalTasks > 0)
+        .map(category => category.completionRate),
+      backgroundColor: categoryAnalytics
+        .filter(category => category.totalTasks > 0)
+        .map(category => category.color),
+      borderColor: categoryAnalytics
+        .filter(category => category.totalTasks > 0)
+        .map(category => category.color),
+      borderWidth: 2,
+      borderRadius: 4,
+    }]
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          font: {
+            family: "'PT Sans', sans-serif",
+            size: 12
+          },
+          usePointStyle: true,
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleFont: {
+          family: "'Poppins', sans-serif",
+          size: 14
+        },
+        bodyFont: {
+          family: "'PT Sans', sans-serif",
+          size: 12
+        }
+      }
+    }
+  };
+
+  const lineChartOptions = {
+    ...chartOptions,
+    scales: {
+      y: {
+        beginAtZero: true,
+        max: 100,
+        ticks: {
+          font: {
+            family: "'PT Sans', sans-serif",
+            size: 12
+          }
+        }
+      },
+      x: {
+        ticks: {
+          font: {
+            family: "'PT Sans', sans-serif",
+            size: 12
+          },
+          maxRotation: 45
+        }
+      }
+    }
+  };
+
+  const barChartOptions = {
+    ...chartOptions,
+    scales: {
+      y: {
+        beginAtZero: true,
+        max: 100,
+        ticks: {
+          font: {
+            family: "'PT Sans', sans-serif",
+            size: 12
+          }
+        }
+      },
+      x: {
+        ticks: {
+          font: {
+            family: "'PT Sans', sans-serif",
+            size: 12
+          },
+          maxRotation: 45
+        }
+      }
+    }
+  };
+
   if (isLoading) {
     return (
       <div style={{ padding: '20px', textAlign: 'center' }}>
@@ -215,6 +468,37 @@ export default function TaskAnalytics({ tasks, goals, categories }) {
       <div style={{ padding: '20px', textAlign: 'center' }}>
         <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
         <p style={{ color: '#F44336', fontFamily: "'PT Sans', sans-serif" }}>{error}</p>
+      </div>
+    );
+  }
+
+  // Check if there are any tasks to analyze
+  if (!tasks || tasks.length === 0) {
+    return (
+      <div style={{
+        background: '#fff',
+        borderRadius: '12px',
+        padding: '24px',
+        boxShadow: '0 2px 8px rgba(100,149,237,0.08)',
+        marginBottom: '24px',
+        textAlign: 'center'
+      }}>
+        <h2 style={{ 
+          margin: '0 0 20px 0', 
+          fontSize: '24px', 
+          color: '#333',
+          fontFamily: "'Poppins', sans-serif",
+          fontWeight: 600
+        }}>
+          Task Analytics
+        </h2>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>📊</div>
+        <p style={{ color: '#666', fontFamily: "'PT Sans', sans-serif", marginBottom: '16px' }}>
+          No tasks available for analysis
+        </p>
+        <p style={{ color: '#999', fontFamily: "'PT Sans', sans-serif", fontSize: '14px' }}>
+          Create some tasks to see detailed analytics and insights
+        </p>
       </div>
     );
   }
@@ -379,7 +663,7 @@ export default function TaskAnalytics({ tasks, goals, categories }) {
             textAlign: 'center',
             border: '2px solid #9C27B0'
           }}>
-            <div style={{ fontSize: '24px', marginBottom: '4px' }}>🎯</div>
+            <div style={{ fontSize: '24px', marginBottom: '4px' }}>📊</div>
             <div style={{
               fontSize: '20px',
               fontWeight: 'bold',
@@ -390,149 +674,24 @@ export default function TaskAnalytics({ tasks, goals, categories }) {
             </div>
             <div style={{ fontSize: '12px', color: '#666' }}>Time Accuracy</div>
           </div>
-        </div>
-      </div>
-
-      {/* Time Analysis */}
-      <div style={{ marginBottom: '32px' }}>
-        <h3 style={{
-          margin: '0 0 16px 0',
-          fontSize: '18px',
-          color: '#333',
-          fontFamily: "'Poppins', sans-serif",
-          fontWeight: 600
-        }}>
-          Time Estimation Analysis
-        </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
-          <div style={{
-            background: '#f8f9fa',
-            borderRadius: '8px',
-            padding: '16px',
-            border: '2px solid #4CAF50'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-              <FaCheckCircle style={{ color: '#4CAF50' }} />
-              <h4 style={{
-                margin: 0,
-                fontSize: '16px',
-                color: '#333',
-                fontFamily: "'Poppins', sans-serif",
-                fontWeight: 600
-              }}>
-                Accurate Estimates
-              </h4>
-            </div>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#4CAF50', marginBottom: '4px' }}>
-              {timeAnalysis.accurate.length}
-            </div>
-            <div style={{ fontSize: '12px', color: '#666' }}>
-              {stats.totalTasks > 0 ? Math.round((timeAnalysis.accurate.length / stats.totalTasks) * 100) : 0}% of tasks
-            </div>
-          </div>
           
-          <div style={{
-            background: '#f8f9fa',
-            borderRadius: '8px',
-            padding: '16px',
-            border: '2px solid #FF9800'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-              <FaExclamationTriangle style={{ color: '#FF9800' }} />
-              <h4 style={{
-                margin: 0,
-                fontSize: '16px',
-                color: '#333',
-                fontFamily: "'Poppins', sans-serif",
-                fontWeight: 600
-              }}>
-                Underestimated
-              </h4>
-            </div>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#FF9800', marginBottom: '4px' }}>
-              {timeAnalysis.underEstimated.length}
-            </div>
-            <div style={{ fontSize: '12px', color: '#666' }}>
-              {stats.totalTasks > 0 ? Math.round((timeAnalysis.underEstimated.length / stats.totalTasks) * 100) : 0}% of tasks
-            </div>
-          </div>
-          
-          <div style={{
-            background: '#f8f9fa',
-            borderRadius: '8px',
-            padding: '16px',
-            border: '2px solid #F44336'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-              <FaExclamationTriangle style={{ color: '#F44336' }} />
-              <h4 style={{
-                margin: 0,
-                fontSize: '16px',
-                color: '#333',
-                fontFamily: "'Poppins', sans-serif",
-                fontWeight: 600
-              }}>
-                Overestimated
-              </h4>
-            </div>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#F44336', marginBottom: '4px' }}>
-              {timeAnalysis.overEstimated.length}
-            </div>
-            <div style={{ fontSize: '12px', color: '#666' }}>
-              {stats.totalTasks > 0 ? Math.round((timeAnalysis.overEstimated.length / stats.totalTasks) * 100) : 0}% of tasks
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* AI Optimization Effectiveness */}
-      <div style={{ marginBottom: '32px' }}>
-        <h3 style={{
-          margin: '0 0 16px 0',
-          fontSize: '18px',
-          color: '#333',
-          fontFamily: "'Poppins', sans-serif",
-          fontWeight: 600
-        }}>
-          AI Optimization Effectiveness
-        </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
           <div style={{
             background: '#f8f9fa',
             borderRadius: '8px',
             padding: '16px',
             textAlign: 'center',
-            border: '2px solid #6495ED'
+            border: '2px solid #E91E63'
           }}>
             <div style={{ fontSize: '24px', marginBottom: '4px' }}>🤖</div>
             <div style={{
-              fontSize: '24px',
+              fontSize: '20px',
               fontWeight: 'bold',
-              color: '#6495ED',
+              color: '#E91E63',
               fontFamily: "'Poppins', sans-serif"
             }}>
               {stats.aiTasks}
             </div>
-            <div style={{ fontSize: '12px', color: '#666' }}>AI-Optimized Tasks</div>
-          </div>
-          
-          <div style={{
-            background: '#f8f9fa',
-            borderRadius: '8px',
-            padding: '16px',
-            textAlign: 'center',
-            border: '2px solid #4CAF50'
-          }}>
-            <div style={{ fontSize: '24px', marginBottom: '4px' }}>📈</div>
-            <div style={{
-              fontSize: '24px',
-              fontWeight: 'bold',
-              color: '#4CAF50',
-              fontFamily: "'Poppins', sans-serif"
-            }}>
-              {stats.aiCompletionRate}%
-            </div>
-            <div style={{ fontSize: '12px', color: '#666' }}>AI Task Completion</div>
+            <div style={{ fontSize: '12px', color: '#666' }}>AI Tasks</div>
           </div>
           
           <div style={{
@@ -556,7 +715,7 @@ export default function TaskAnalytics({ tasks, goals, categories }) {
         </div>
       </div>
 
-      {/* Progress Over Time */}
+      {/* Charts Section */}
       <div style={{ marginBottom: '32px' }}>
         <h3 style={{
           margin: '0 0 16px 0',
@@ -565,48 +724,110 @@ export default function TaskAnalytics({ tasks, goals, categories }) {
           fontFamily: "'Poppins', sans-serif",
           fontWeight: 600
         }}>
-          Task Completion Over Time
+          Visual Analytics
         </h3>
-        <div style={{
-          background: '#f8f9fa',
-          borderRadius: '8px',
-          padding: '16px',
-          height: '200px',
-          display: 'flex',
-          alignItems: 'flex-end',
-          gap: '2px',
-          overflowX: 'auto'
-        }}>
-          {progressData.map((data, index) => (
-            <div
-              key={index}
-              style={{
-                flex: 1,
-                minWidth: '20px',
-                background: '#6495ED',
-                height: `${data.progress}%`,
-                borderRadius: '2px 2px 0 0',
-                position: 'relative',
-                cursor: 'pointer'
-              }}
-              title={`${data.date}: ${data.progress}% (${data.completedTasks}/${data.totalTasks} tasks)`}
-            />
-          ))}
+        
+        {/* Progress Over Time Chart */}
+        <div style={{ marginBottom: '32px' }}>
+          <h4 style={{
+            margin: '0 0 12px 0',
+            fontSize: '16px',
+            color: '#333',
+            fontFamily: "'Poppins', sans-serif",
+            fontWeight: 600
+          }}>
+            Task Completion Over Time
+          </h4>
+          <div style={{ height: '300px', background: '#f8f9fa', borderRadius: '8px', padding: '16px' }}>
+            {renderChart(Line, progressLineData, lineChartOptions)}
+          </div>
         </div>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          fontSize: '12px', 
-          color: '#666',
-          marginTop: '8px',
-          fontFamily: "'PT Sans', sans-serif"
-        }}>
-          <span>{progressData[0]?.date}</span>
-          <span>{progressData[progressData.length - 1]?.date}</span>
+
+        {/* Distribution Charts */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '32px' }}>
+          {/* Task Status Distribution */}
+          <div style={{ background: '#f8f9fa', borderRadius: '8px', padding: '16px' }}>
+            <h4 style={{
+              margin: '0 0 12px 0',
+              fontSize: '16px',
+              color: '#333',
+              fontFamily: "'Poppins', sans-serif",
+              fontWeight: 600
+            }}>
+              Task Status Distribution
+            </h4>
+            <div style={{ height: '250px' }}>
+              {renderChart(Doughnut, taskStatusChartData, chartOptions)}
+            </div>
+          </div>
+
+          {/* Priority Distribution */}
+          <div style={{ background: '#f8f9fa', borderRadius: '8px', padding: '16px' }}>
+            <h4 style={{
+              margin: '0 0 12px 0',
+              fontSize: '16px',
+              color: '#333',
+              fontFamily: "'Poppins', sans-serif",
+              fontWeight: 600
+            }}>
+              Priority Distribution
+            </h4>
+            <div style={{ height: '250px' }}>
+              {renderChart(Pie, taskPriorityChartData, chartOptions)}
+            </div>
+          </div>
+
+          {/* Time Accuracy Distribution */}
+          <div style={{ background: '#f8f9fa', borderRadius: '8px', padding: '16px' }}>
+            <h4 style={{
+              margin: '0 0 12px 0',
+              fontSize: '16px',
+              color: '#333',
+              fontFamily: "'Poppins', sans-serif",
+              fontWeight: 600
+            }}>
+              Time Estimation Accuracy
+            </h4>
+            <div style={{ height: '250px' }}>
+              {renderChart(Pie, timeAccuracyChartData, chartOptions)}
+            </div>
+          </div>
+        </div>
+
+        {/* Goal Task Performance Chart */}
+        <div style={{ background: '#f8f9fa', borderRadius: '8px', padding: '16px', marginBottom: '32px' }}>
+          <h4 style={{
+            margin: '0 0 12px 0',
+            fontSize: '16px',
+            color: '#333',
+            fontFamily: "'Poppins', sans-serif",
+            fontWeight: 600
+          }}>
+            Goal Task Performance (Top 10)
+          </h4>
+          <div style={{ height: '300px' }}>
+            {renderChart(Bar, goalTaskBarData, barChartOptions)}
+          </div>
+        </div>
+
+        {/* Category Task Performance Chart */}
+        <div style={{ background: '#f8f9fa', borderRadius: '8px', padding: '16px' }}>
+          <h4 style={{
+            margin: '0 0 12px 0',
+            fontSize: '16px',
+            color: '#333',
+            fontFamily: "'Poppins', sans-serif",
+            fontWeight: 600
+          }}>
+            Category Task Performance
+          </h4>
+          <div style={{ height: '300px' }}>
+            {renderChart(Bar, categoryTaskBarData, barChartOptions)}
+          </div>
         </div>
       </div>
 
-      {/* Goal Performance */}
+      {/* Goal Performance Details */}
       <div style={{ marginBottom: '32px' }}>
         <h3 style={{
           margin: '0 0 16px 0',
@@ -615,7 +836,7 @@ export default function TaskAnalytics({ tasks, goals, categories }) {
           fontFamily: "'Poppins', sans-serif",
           fontWeight: 600
         }}>
-          Goal Task Performance
+          Goal Task Performance Details
         </h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {stats.goalStats
@@ -751,7 +972,7 @@ export default function TaskAnalytics({ tasks, goals, categories }) {
                   <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#4CAF50' }}>
                     {category.completionRate}%
                   </div>
-                  <div style={{ color: '#666' }}>Completion Rate</div>
+                  <div style={{ color: '#666' }}>Task Completion</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#FF9800' }}>
@@ -763,7 +984,7 @@ export default function TaskAnalytics({ tasks, goals, categories }) {
                   <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#9C27B0' }}>
                     {formatTime(category.avgTaskDuration)}
                   </div>
-                  <div style={{ color: '#666' }}>Avg Duration</div>
+                  <div style={{ color: '#666' }}>Avg Task Duration</div>
                 </div>
               </div>
             </div>

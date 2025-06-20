@@ -1,3 +1,5 @@
+'use client';
+
 import Sidebar from '../../components/Sidebar';
 import { useState } from 'react';
 
@@ -222,70 +224,6 @@ export default function SettingsPage() {
               { value: 'GMT', label: 'Greenwich Mean Time' }
             ]}
           />
-        </div>
-
-        <div style={{
-          background: '#fff',
-          borderRadius: '12px',
-          padding: '24px',
-          marginTop: '24px',
-          boxShadow: '0 2px 8px rgba(100,149,237,0.08)'
-        }}>
-          <h2 style={{
-            margin: '0 0 24px 0',
-            fontSize: '20px',
-            color: '#333',
-            fontFamily: "'Poppins', sans-serif",
-            fontWeight: 600
-          }}>
-            Account
-          </h2>
-
-          <div style={{
-            display: 'flex',
-            gap: '16px',
-            flexWrap: 'wrap'
-          }}>
-            <button style={{
-              background: '#6495ED',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '12px 24px',
-              fontFamily: "'PT Sans', sans-serif",
-              fontSize: '14px',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }}>
-              Export Data
-            </button>
-            <button style={{
-              background: '#f8f9fa',
-              color: '#333',
-              border: '1px solid #ddd',
-              borderRadius: '8px',
-              padding: '12px 24px',
-              fontFamily: "'PT Sans', sans-serif",
-              fontSize: '14px',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }}>
-              Import Data
-            </button>
-            <button style={{
-              background: '#ff6b6b',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '12px 24px',
-              fontFamily: "'PT Sans', sans-serif",
-              fontSize: '14px',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }}>
-              Reset All Data
-            </button>
-          </div>
         </div>
       </main>
     </div>

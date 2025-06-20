@@ -1,26 +1,40 @@
+'use client';
+
 import Sidebar from '../../components/Sidebar';
-import WeeklyPlanner from '../../components/Planner/WeeklyPlanner';
+import SummaryCards from '../../components/Progress/SummaryCards';
+import GoalProgressBoard from '../../components/Progress/GoalProgressBoard';
+import AITaskFilter from '../../components/Progress/AITaskFilter';
 import { useState, useEffect } from 'react';
 
-export default function PlannerPage() {
+export default function ProgressPage() {
+  const [goals, setGoals] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchTasks = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch('/api/tasks');
-        if (response.ok) {
-          const data = await response.json();
-          setTasks(data);
+        const [goalsResponse, tasksResponse] = await Promise.all([
+          fetch('/api/goals'),
+          fetch('/api/tasks')
+        ]);
+        
+        if (goalsResponse.ok) {
+          const goalsData = await goalsResponse.json();
+          setGoals(goalsData);
+        }
+        
+        if (tasksResponse.ok) {
+          const tasksData = await tasksResponse.json();
+          setTasks(tasksData);
         }
       } catch (error) {
-        console.error('Failed to fetch tasks:', error);
+        console.error('Failed to fetch progress data:', error);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchTasks();
+    fetchData();
   }, []);
 
   return (
@@ -44,14 +58,14 @@ export default function PlannerPage() {
             fontFamily: "'Poppins', sans-serif",
             fontWeight: 600
           }}>
-            Weekly Planner
+            Progress Tracking
           </h1>
           <p style={{ 
             margin: 0,
             color: '#666',
             fontSize: '16px'
           }}>
-            Plan your week with time-block scheduling and task management.
+            Monitor your progress and track achievements across all your goals.
           </p>
         </div>
         
@@ -63,10 +77,14 @@ export default function PlannerPage() {
             textAlign: 'center',
             color: '#666'
           }}>
-            Loading planner...
+            Loading progress data...
           </div>
         ) : (
-          <WeeklyPlanner tasks={tasks} onTasksChange={setTasks} />
+          <div style={{ display: 'grid', gap: '24px' }}>
+            <SummaryCards goals={goals} tasks={tasks} />
+            <GoalProgressBoard goals={goals} />
+            <AITaskFilter tasks={tasks} />
+          </div>
         )}
       </main>
     </div>

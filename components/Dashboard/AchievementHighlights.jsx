@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function AchievementHighlights({ goals, tasks }) {
+export default function AchievementHighlights({ goals = [], tasks = [] }) {
   const getAchievements = () => {
     const achievements = [];
     
@@ -267,7 +267,7 @@ export default function AchievementHighlights({ goals, tasks }) {
           fontFamily: "'PT Sans', sans-serif",
           fontSize: '14px',
           color: '#6495ED',
-          fontWeight: 600
+          fontWeight: '600'
         }}>
           Keep going! 🚀
         </div>

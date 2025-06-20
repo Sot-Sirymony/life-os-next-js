@@ -1,5 +1,7 @@
 'use client';
 
+import LifeGoalsBoard from '@/components/Goals/LifeGoalsBoard';
+
 export default function GoalsPage() {
   return (
     <div style={{ 
@@ -85,6 +87,111 @@ export default function GoalsPage() {
             <span style={{ fontSize: '20px' }}>🎯</span>
             <span>Goals</span>
           </a>
+          <a 
+            href="/categories"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '16px',
+              borderRadius: '12px',
+              color: '#333',
+              background: 'transparent',
+              textDecoration: 'none',
+              marginBottom: '8px',
+              transition: 'all 0.3s ease',
+              fontFamily: "'PT Sans', sans-serif",
+              fontSize: '16px',
+              fontWeight: 400
+            }}
+          >
+            <span style={{ fontSize: '20px' }}>📂</span>
+            <span>Categories</span>
+          </a>
+          <a 
+            href="/tasks"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '16px',
+              borderRadius: '12px',
+              color: '#333',
+              background: 'transparent',
+              textDecoration: 'none',
+              marginBottom: '8px',
+              transition: 'all 0.3s ease',
+              fontFamily: "'PT Sans', sans-serif",
+              fontSize: '16px',
+              fontWeight: 400
+            }}
+          >
+            <span style={{ fontSize: '20px' }}>✅</span>
+            <span>Tasks</span>
+          </a>
+          <a 
+            href="/planner"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '16px',
+              borderRadius: '12px',
+              color: '#333',
+              background: 'transparent',
+              textDecoration: 'none',
+              marginBottom: '8px',
+              transition: 'all 0.3s ease',
+              fontFamily: "'PT Sans', sans-serif",
+              fontSize: '16px',
+              fontWeight: 400
+            }}
+          >
+            <span style={{ fontSize: '20px' }}>📅</span>
+            <span>Planner</span>
+          </a>
+          <a 
+            href="/progress"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '16px',
+              borderRadius: '12px',
+              color: '#333',
+              background: 'transparent',
+              textDecoration: 'none',
+              marginBottom: '8px',
+              transition: 'all 0.3s ease',
+              fontFamily: "'PT Sans', sans-serif",
+              fontSize: '16px',
+              fontWeight: 400
+            }}
+          >
+            <span style={{ fontSize: '20px' }}>📈</span>
+            <span>Progress</span>
+          </a>
+          <a 
+            href="/settings"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '16px',
+              borderRadius: '12px',
+              color: '#333',
+              background: 'transparent',
+              textDecoration: 'none',
+              marginBottom: '8px',
+              transition: 'all 0.3s ease',
+              fontFamily: "'PT Sans', sans-serif",
+              fontSize: '16px',
+              fontWeight: 400
+            }}
+          >
+            <span style={{ fontSize: '20px' }}>⚙️</span>
+            <span>Settings</span>
+          </a>
         </nav>
       </div>
       <main style={{ 
@@ -92,46 +199,7 @@ export default function GoalsPage() {
         padding: '24px',
         overflowY: 'auto'
       }}>
-        <div style={{ marginBottom: '24px' }}>
-          <h1 style={{ 
-            margin: '0 0 8px 0',
-            fontSize: '32px',
-            color: '#333',
-            fontFamily: "'Poppins', sans-serif",
-            fontWeight: 600
-          }}>
-            Life Goals
-          </h1>
-          <p style={{ 
-            margin: 0,
-            color: '#666',
-            fontSize: '16px'
-          }}>
-            Define, track, and manage your life goals with comprehensive planning and analytics.
-          </p>
-        </div>
-        
-        <div style={{
-          background: '#fff',
-          borderRadius: '12px',
-          padding: '24px',
-          boxShadow: '0 2px 8px rgba(100,149,237,0.08)',
-          textAlign: 'center'
-        }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎯</div>
-          <h2 style={{
-            margin: '0 0 8px 0',
-            fontSize: '24px',
-            color: '#333',
-            fontFamily: "'Poppins', sans-serif",
-            fontWeight: 600
-          }}>
-            Goals Page Working!
-          </h2>
-          <p style={{ margin: 0, color: '#666' }}>
-            The goals page is now accessible. The LifeGoalsBoard component will be loaded here.
-          </p>
-        </div>
+        <LifeGoalsBoard />
       </main>
     </div>
   );

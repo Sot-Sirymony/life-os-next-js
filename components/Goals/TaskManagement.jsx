@@ -1,6 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { FaPlus, FaEdit, FaTrash, FaCopy, FaExchangeAlt, FaClock, FaChartLine, FaRobot } from 'react-icons/fa';
 
+// Add CSS animations for time tracking
+const timeTrackingStyles = `
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  
+  @keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
+  }
+`;
+
 export default function TaskManagement({ tasks, goals, onTasksChange, onGoalsChange }) {
   const [selectedTask, setSelectedTask] = useState(null);
   const [isEditingTask, setIsEditingTask] = useState(false);
@@ -100,8 +114,10 @@ export default function TaskManagement({ tasks, goals, onTasksChange, onGoalsCha
       const { type, taskId } = confirmAction;
       
       if (type === 'delete') {
-        const response = await fetch(`/api/tasks/${taskId}`, {
+        const response = await fetch('/api/tasks', {
           method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: taskId })
         });
 
         if (response.ok) {
@@ -129,7 +145,7 @@ export default function TaskManagement({ tasks, goals, onTasksChange, onGoalsCha
     }));
   };
 
-  const stopTimeTracking = (taskId) => {
+  const stopTimeTracking = async (taskId) => {
     const tracking = timeTracking[taskId];
     if (!tracking) return;
 
@@ -142,10 +158,29 @@ export default function TaskManagement({ tasks, goals, onTasksChange, onGoalsCha
         updatedAt: new Date().toISOString()
       };
       
-      const updatedTasks = tasks.map(t => 
-        t.id === taskId ? updatedTask : t
-      );
-      onTasksChange(updatedTasks);
+      try {
+        // Save to database
+        const response = await fetch('/api/tasks', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(updatedTask),
+        });
+
+        if (response.ok) {
+          const savedTask = await response.json();
+          // Update local state with the saved task
+          const updatedTasks = tasks.map(t => 
+            t.id === taskId ? savedTask : t
+          );
+          onTasksChange(updatedTasks);
+        } else {
+          console.error('Failed to save time tracking');
+        }
+      } catch (error) {
+        console.error('Error saving time tracking:', error);
+      }
     }
 
     setTimeTracking(prev => ({
@@ -223,6 +258,7 @@ export default function TaskManagement({ tasks, goals, onTasksChange, onGoalsCha
       boxShadow: '0 2px 8px rgba(100,149,237,0.08)',
       marginBottom: '24px'
     }}>
+      <style>{timeTrackingStyles}</style>
       <h2 style={{ 
         margin: '0 0 20px 0', 
         fontSize: '24px', 
@@ -340,16 +376,33 @@ export default function TaskManagement({ tasks, goals, onTasksChange, onGoalsCha
             <div
               key={task.id}
               style={{
-                background: '#f8f9fa',
+                background: isTracking ? '#FFF3E0' : '#f8f9fa',
                 borderRadius: '8px',
                 padding: '16px',
-                border: `2px solid ${getStatusColor(task.status)}30`,
+                border: isTracking 
+                  ? '2px solid #FF9800' 
+                  : `2px solid ${getStatusColor(task.status)}30`,
                 display: 'flex',
                 alignItems: 'center',
                 gap: '16px',
-                position: 'relative'
+                position: 'relative',
+                transition: 'all 0.3s ease'
               }}
             >
+              {/* Time tracking indicator */}
+              {isTracking && (
+                <div style={{
+                  position: 'absolute',
+                  top: '8px',
+                  left: '8px',
+                  width: '8px',
+                  height: '8px',
+                  background: '#FF9800',
+                  borderRadius: '50%',
+                  animation: 'blink 1s infinite'
+                }} />
+              )}
+
               {/* Task Info */}
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
@@ -461,6 +514,7 @@ export default function TaskManagement({ tasks, goals, onTasksChange, onGoalsCha
                 
                 <button
                   onClick={() => isTracking ? stopTimeTracking(task.id) : startTimeTracking(task.id)}
+                  title={isTracking ? 'Stop time tracking' : 'Start time tracking'}
                   style={{
                     background: isTracking ? '#F44336' : '#FF9800',
                     color: '#fff',
@@ -469,10 +523,25 @@ export default function TaskManagement({ tasks, goals, onTasksChange, onGoalsCha
                     padding: '6px 10px',
                     fontFamily: "'PT Sans', sans-serif",
                     cursor: 'pointer',
-                    fontSize: '12px'
+                    fontSize: '12px',
+                    position: 'relative',
+                    animation: isTracking ? 'pulse 2s infinite' : 'none',
+                    boxShadow: isTracking ? '0 0 8px rgba(244, 67, 54, 0.5)' : 'none'
                   }}
                 >
                   <FaClock />
+                  {isTracking && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '-8px',
+                      right: '-8px',
+                      width: '8px',
+                      height: '8px',
+                      background: '#fff',
+                      borderRadius: '50%',
+                      animation: 'blink 1s infinite'
+                    }} />
+                  )}
                 </button>
                 
                 <button

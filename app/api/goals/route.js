@@ -57,7 +57,7 @@ export async function POST(request) {
         description: data.description || '',
         categoryId: data.categoryId,
         status: data.status || 'Not Started',
-        progress: data.progress || 0,
+        progress: data.progress !== undefined ? parseInt(data.progress) || 0 : 0,
         timeframe: data.timeframe || 'Short',
         priority: data.priority || 'Medium',
         notes: data.notes || '',
@@ -104,9 +104,31 @@ export async function PUT(request) {
       );
     }
 
+    // Clean the update data to only include fields that can be updated
+    const cleanUpdateData = {
+      title: updateData.title,
+      description: updateData.description,
+      categoryId: updateData.categoryId,
+      status: updateData.status,
+      progress: updateData.progress !== undefined ? parseInt(updateData.progress) || 0 : undefined,
+      timeframe: updateData.timeframe,
+      priority: updateData.priority,
+      notes: updateData.notes,
+      dependencies: updateData.dependencies,
+      completionDate: updateData.completionDate,
+      updatedAt: new Date()
+    };
+
+    // Remove undefined values
+    Object.keys(cleanUpdateData).forEach(key => {
+      if (cleanUpdateData[key] === undefined) {
+        delete cleanUpdateData[key];
+      }
+    });
+
     const goal = await prisma.goal.update({
       where: { id },
-      data: updateData,
+      data: cleanUpdateData,
       include: {
         category: true,
         tasks: true,
@@ -114,7 +136,7 @@ export async function PUT(request) {
     });
 
     // Create activity record for updates
-    if (Object.keys(updateData).length > 0) {
+    if (Object.keys(cleanUpdateData).length > 0) {
       const defaultUser = await prisma.user.findUnique({
         where: { email: 'default@example.com' },
       });
@@ -123,7 +145,7 @@ export async function PUT(request) {
         data: {
           type: 'goal_updated',
           description: `Updated goal: ${goal.title}`,
-          metadata: JSON.stringify(updateData),
+          metadata: JSON.stringify(cleanUpdateData),
           goalId: goal.id,
           userId: defaultUser.id,
         }

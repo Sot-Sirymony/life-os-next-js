@@ -43,6 +43,15 @@ export async function POST(request) {
       );
     }
 
+    // Handle dueDate conversion if provided
+    let dueDate = data.dueDate || null;
+    if (dueDate && typeof dueDate === 'string') {
+      // If it's just a date string (YYYY-MM-DD), convert to ISO datetime
+      if (dueDate.length === 10) {
+        dueDate = new Date(dueDate + 'T00:00:00.000Z').toISOString();
+      }
+    }
+
     const task = await prisma.task.create({
       data: {
         title: data.title,
@@ -52,7 +61,7 @@ export async function POST(request) {
         timeEstimate: data.timeEstimate || null,
         timeSpent: data.timeSpent || 0,
         tools: data.tools || '',
-        dueDate: data.dueDate || null,
+        dueDate: dueDate,
         notes: data.notes || '',
         aiIntegration: data.aiIntegration || false,
         optimizationSuggestions: data.optimizationSuggestions || null,
@@ -90,6 +99,14 @@ export async function PUT(request) {
   try {
     const data = await request.json();
     const { id, ...updateData } = data;
+    
+    // Handle dueDate conversion if provided
+    if (updateData.dueDate && typeof updateData.dueDate === 'string') {
+      // If it's just a date string (YYYY-MM-DD), convert to ISO datetime
+      if (updateData.dueDate.length === 10) {
+        updateData.dueDate = new Date(updateData.dueDate + 'T00:00:00.000Z').toISOString();
+      }
+    }
     
     const task = await prisma.task.update({
       where: { id },

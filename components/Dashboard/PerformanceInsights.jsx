@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function PerformanceInsights({ goals, tasks }) {
+export default function PerformanceInsights({ goals = [], tasks = [] }) {
   const calculateInsights = () => {
     const totalGoals = goals.length;
     const completedGoals = goals.filter(g => g.status === 'Done').length;

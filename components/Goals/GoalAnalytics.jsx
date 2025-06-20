@@ -1,4 +1,32 @@
 import React, { useState, useEffect } from 'react';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+} from 'chart.js';
+import { Line, Bar, Pie, Doughnut } from 'react-chartjs-2';
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 export default function GoalAnalytics({ goals, categories, tasks }) {
   const [selectedTimeframe, setSelectedTimeframe] = useState('all'); // all, week, month, quarter, year
@@ -175,6 +203,142 @@ export default function GoalAnalytics({ goals, categories, tasks }) {
     return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
   };
 
+  // Chart data configurations
+  const statusChartData = {
+    labels: ['Completed', 'In Progress', 'Not Started'],
+    datasets: [{
+      data: [stats.completedGoals, stats.inProgressGoals, stats.notStartedGoals],
+      backgroundColor: ['#4CAF50', '#FF9800', '#F44336'],
+      borderColor: ['#4CAF50', '#FF9800', '#F44336'],
+      borderWidth: 2,
+    }]
+  };
+
+  const priorityChartData = {
+    labels: Object.keys(stats.priorityStats),
+    datasets: [{
+      data: Object.values(stats.priorityStats),
+      backgroundColor: Object.keys(stats.priorityStats).map(getPriorityColor),
+      borderColor: Object.keys(stats.priorityStats).map(getPriorityColor),
+      borderWidth: 2,
+    }]
+  };
+
+  const timeframeChartData = {
+    labels: Object.keys(stats.timeframeStats),
+    datasets: [{
+      data: Object.values(stats.timeframeStats),
+      backgroundColor: Object.keys(stats.timeframeStats).map(getTimeframeColor),
+      borderColor: Object.keys(stats.timeframeStats).map(getTimeframeColor),
+      borderWidth: 2,
+    }]
+  };
+
+  const progressLineData = {
+    labels: progressData.map(d => d.date),
+    datasets: [{
+      label: 'Completion Rate (%)',
+      data: progressData.map(d => d.progress),
+      borderColor: '#6495ED',
+      backgroundColor: 'rgba(100, 149, 237, 0.1)',
+      borderWidth: 3,
+      fill: true,
+      tension: 0.4,
+      pointRadius: 4,
+      pointHoverRadius: 6,
+    }]
+  };
+
+  const categoryBarData = {
+    labels: stats.categoryStats.map(c => c.name),
+    datasets: [{
+      label: 'Completion Rate (%)',
+      data: stats.categoryStats.map(c => c.completionRate),
+      backgroundColor: stats.categoryStats.map(c => c.color),
+      borderColor: stats.categoryStats.map(c => c.color),
+      borderWidth: 2,
+      borderRadius: 4,
+    }]
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          font: {
+            family: "'PT Sans', sans-serif",
+            size: 12
+          },
+          usePointStyle: true,
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleFont: {
+          family: "'Poppins', sans-serif",
+          size: 14
+        },
+        bodyFont: {
+          family: "'PT Sans', sans-serif",
+          size: 12
+        }
+      }
+    }
+  };
+
+  const lineChartOptions = {
+    ...chartOptions,
+    scales: {
+      y: {
+        beginAtZero: true,
+        max: 100,
+        ticks: {
+          font: {
+            family: "'PT Sans', sans-serif",
+            size: 12
+          }
+        }
+      },
+      x: {
+        ticks: {
+          font: {
+            family: "'PT Sans', sans-serif",
+            size: 12
+          },
+          maxRotation: 45
+        }
+      }
+    }
+  };
+
+  const barChartOptions = {
+    ...chartOptions,
+    scales: {
+      y: {
+        beginAtZero: true,
+        max: 100,
+        ticks: {
+          font: {
+            family: "'PT Sans', sans-serif",
+            size: 12
+          }
+        }
+      },
+      x: {
+        ticks: {
+          font: {
+            family: "'PT Sans', sans-serif",
+            size: 12
+          },
+          maxRotation: 45
+        }
+      }
+    }
+  };
+
   if (isLoading) {
     return (
       <div style={{ padding: '20px', textAlign: 'center' }}>
@@ -348,7 +512,7 @@ export default function GoalAnalytics({ goals, categories, tasks }) {
         </div>
       </div>
 
-      {/* Progress Over Time */}
+      {/* Charts Section */}
       <div style={{ marginBottom: '32px' }}>
         <h3 style={{
           margin: '0 0 16px 0',
@@ -357,65 +521,45 @@ export default function GoalAnalytics({ goals, categories, tasks }) {
           fontFamily: "'Poppins', sans-serif",
           fontWeight: 600
         }}>
-          Progress Over Time
+          Visual Analytics
         </h3>
-        <div style={{
-          background: '#f8f9fa',
-          borderRadius: '8px',
-          padding: '16px',
-          height: '200px',
-          display: 'flex',
-          alignItems: 'flex-end',
-          gap: '2px',
-          overflowX: 'auto'
-        }}>
-          {progressData.map((data, index) => (
-            <div
-              key={index}
-              style={{
-                flex: 1,
-                minWidth: '20px',
-                background: '#6495ED',
-                height: `${data.progress}%`,
-                borderRadius: '2px 2px 0 0',
-                position: 'relative',
-                cursor: 'pointer'
-              }}
-              title={`${data.date}: ${data.progress}% (${data.completedGoals}/${data.totalGoals} goals)`}
-            />
-          ))}
-        </div>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          fontSize: '12px', 
-          color: '#666',
-          marginTop: '8px',
-          fontFamily: "'PT Sans', sans-serif"
-        }}>
-          <span>{progressData[0]?.date}</span>
-          <span>{progressData[progressData.length - 1]?.date}</span>
-        </div>
-      </div>
-
-      {/* Goal Distribution */}
-      <div style={{ marginBottom: '32px' }}>
-        <h3 style={{
-          margin: '0 0 16px 0',
-          fontSize: '18px',
-          color: '#333',
-          fontFamily: "'Poppins', sans-serif",
-          fontWeight: 600
-        }}>
-          Goal Distribution
-        </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-          {/* Priority Distribution */}
-          <div style={{
-            background: '#f8f9fa',
-            borderRadius: '8px',
-            padding: '16px'
+        
+        {/* Progress Over Time Chart */}
+        <div style={{ marginBottom: '32px' }}>
+          <h4 style={{
+            margin: '0 0 12px 0',
+            fontSize: '16px',
+            color: '#333',
+            fontFamily: "'Poppins', sans-serif",
+            fontWeight: 600
           }}>
+            Progress Over Time
+          </h4>
+          <div style={{ height: '300px', background: '#f8f9fa', borderRadius: '8px', padding: '16px' }}>
+            <Line data={progressLineData} options={lineChartOptions} />
+          </div>
+        </div>
+
+        {/* Distribution Charts */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '32px' }}>
+          {/* Goal Status Distribution */}
+          <div style={{ background: '#f8f9fa', borderRadius: '8px', padding: '16px' }}>
+            <h4 style={{
+              margin: '0 0 12px 0',
+              fontSize: '16px',
+              color: '#333',
+              fontFamily: "'Poppins', sans-serif",
+              fontWeight: 600
+            }}>
+              Goal Status Distribution
+            </h4>
+            <div style={{ height: '250px' }}>
+              <Doughnut data={statusChartData} options={chartOptions} />
+            </div>
+          </div>
+
+          {/* Priority Distribution */}
+          <div style={{ background: '#f8f9fa', borderRadius: '8px', padding: '16px' }}>
             <h4 style={{
               margin: '0 0 12px 0',
               fontSize: '16px',
@@ -425,35 +569,13 @@ export default function GoalAnalytics({ goals, categories, tasks }) {
             }}>
               Priority Distribution
             </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {Object.entries(stats.priorityStats).map(([priority, count]) => (
-                <div key={priority} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{
-                    fontSize: '14px',
-                    color: getPriorityColor(priority),
-                    fontWeight: 600,
-                    fontFamily: "'PT Sans', sans-serif"
-                  }}>
-                    {priority}
-                  </span>
-                  <span style={{ 
-                    fontSize: '14px', 
-                    color: '#666',
-                    fontFamily: "'PT Sans', sans-serif"
-                  }}>
-                    {count} goals ({Math.round((count / stats.totalGoals) * 100)}%)
-                  </span>
-                </div>
-              ))}
+            <div style={{ height: '250px' }}>
+              <Pie data={priorityChartData} options={chartOptions} />
             </div>
           </div>
-          
+
           {/* Timeframe Distribution */}
-          <div style={{
-            background: '#f8f9fa',
-            borderRadius: '8px',
-            padding: '16px'
-          }}>
+          <div style={{ background: '#f8f9fa', borderRadius: '8px', padding: '16px' }}>
             <h4 style={{
               margin: '0 0 12px 0',
               fontSize: '16px',
@@ -463,32 +585,30 @@ export default function GoalAnalytics({ goals, categories, tasks }) {
             }}>
               Timeframe Distribution
             </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {Object.entries(stats.timeframeStats).map(([timeframe, count]) => (
-                <div key={timeframe} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{
-                    fontSize: '14px',
-                    color: getTimeframeColor(timeframe),
-                    fontWeight: 600,
-                    fontFamily: "'PT Sans', sans-serif"
-                  }}>
-                    {timeframe}
-                  </span>
-                  <span style={{ 
-                    fontSize: '14px', 
-                    color: '#666',
-                    fontFamily: "'PT Sans', sans-serif"
-                  }}>
-                    {count} goals ({Math.round((count / stats.totalGoals) * 100)}%)
-                  </span>
-                </div>
-              ))}
+            <div style={{ height: '250px' }}>
+              <Pie data={timeframeChartData} options={chartOptions} />
             </div>
+          </div>
+        </div>
+
+        {/* Category Performance Chart */}
+        <div style={{ background: '#f8f9fa', borderRadius: '8px', padding: '16px' }}>
+          <h4 style={{
+            margin: '0 0 12px 0',
+            fontSize: '16px',
+            color: '#333',
+            fontFamily: "'Poppins', sans-serif",
+            fontWeight: 600
+          }}>
+            Category Performance
+          </h4>
+          <div style={{ height: '300px' }}>
+            <Bar data={categoryBarData} options={barChartOptions} />
           </div>
         </div>
       </div>
 
-      {/* Category Performance */}
+      {/* Category Performance Details */}
       <div style={{ marginBottom: '32px' }}>
         <h3 style={{
           margin: '0 0 16px 0',
@@ -497,7 +617,7 @@ export default function GoalAnalytics({ goals, categories, tasks }) {
           fontFamily: "'Poppins', sans-serif",
           fontWeight: 600
         }}>
-          Category Performance
+          Category Performance Details
         </h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {stats.categoryStats.map((category) => (

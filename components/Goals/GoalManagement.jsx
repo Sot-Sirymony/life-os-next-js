@@ -9,6 +9,7 @@ export default function GoalManagement({ goals, onGoalsChange }) {
   const [confirmAction, setConfirmAction] = useState(null);
   const [error, setError] = useState(null);
   const [categories, setCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
@@ -19,15 +20,46 @@ export default function GoalManagement({ goals, onGoalsChange }) {
     fetchCategories();
   }, []);
 
-  const fetchCategories = async () => {
+  const fetchCategories = async (retryCount = 0) => {
     try {
+      setCategoriesLoading(true);
+      console.log('Fetching categories from /api/categories... (attempt', retryCount + 1, ')');
       const response = await fetch('/api/categories');
+      console.log('Categories response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('Categories fetched successfully:', data.length, 'categories');
         setCategories(data);
+        setError(null); // Clear any previous errors
+      } else {
+        console.error('Failed to fetch categories. Status:', response.status);
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        
+        if (retryCount < 2) {
+          console.log('Retrying fetch categories in 1 second...');
+          setTimeout(() => fetchCategories(retryCount + 1), 1000);
+        } else {
+          setError('Failed to load categories after multiple attempts');
+        }
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
+      
+      if (retryCount < 2) {
+        console.log('Retrying fetch categories in 1 second due to network error...');
+        setTimeout(() => fetchCategories(retryCount + 1), 1000);
+      } else {
+        setError('Network error: Unable to load categories after multiple attempts');
+      }
+    } finally {
+      setCategoriesLoading(false);
     }
   };
 
@@ -108,8 +140,12 @@ export default function GoalManagement({ goals, onGoalsChange }) {
       
       if (type === 'delete') {
         setIsDeleting(goal.id);
-        const response = await fetch(`/api/goals/${goal.id}`, {
+        const response = await fetch('/api/goals', {
           method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ id: goal.id }),
         });
 
         if (response.ok) {
@@ -121,7 +157,7 @@ export default function GoalManagement({ goals, onGoalsChange }) {
         setIsDeleting(null);
       } else if (type === 'archive') {
         setIsArchiving(goal.id);
-        const response = await fetch(`/api/goals/${goal.id}`, {
+        const response = await fetch('/api/goals', {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -130,8 +166,9 @@ export default function GoalManagement({ goals, onGoalsChange }) {
         });
 
         if (response.ok) {
+          const updatedGoalData = await response.json();
           const updatedGoals = goals.map(g => 
-            g.id === goal.id ? { ...g, isArchived: true } : g
+            g.id === goal.id ? updatedGoalData : g
           );
           onGoalsChange(updatedGoals);
         } else {
@@ -150,7 +187,7 @@ export default function GoalManagement({ goals, onGoalsChange }) {
 
   const handleSaveEdit = async (updatedGoal) => {
     try {
-      const response = await fetch(`/api/goals/${updatedGoal.id}`, {
+      const response = await fetch('/api/goals', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -159,8 +196,9 @@ export default function GoalManagement({ goals, onGoalsChange }) {
       });
 
       if (response.ok) {
+        const updatedGoalData = await response.json();
         const updatedGoals = goals.map(g => 
-          g.id === updatedGoal.id ? updatedGoal : g
+          g.id === updatedGoal.id ? updatedGoalData : g
         );
         onGoalsChange(updatedGoals);
         setEditingGoal(null);
@@ -268,6 +306,23 @@ export default function GoalManagement({ goals, onGoalsChange }) {
           >
             ×
           </button>
+        </div>
+      )}
+
+      {categoriesLoading && (
+        <div style={{
+          background: '#E3F2FD',
+          color: '#1976D2',
+          padding: '12px',
+          borderRadius: '6px',
+          marginBottom: '16px',
+          fontFamily: "'PT Sans', sans-serif",
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <div style={{ fontSize: '16px' }}>⏳</div>
+          Loading categories...
         </div>
       )}
 
@@ -463,7 +518,38 @@ export default function GoalManagement({ goals, onGoalsChange }) {
                   <span>Progress: {goal.progress}%</span>
                   <span>Timeframe: {goal.timeframe}</span>
                   <span>Created: {new Date(goal.createdAt).toLocaleDateString()}</span>
+                  {goal.completionDate && (
+                    <span>Completed: {new Date(goal.completionDate).toLocaleDateString()}</span>
+                  )}
+                  {goal.updatedAt && goal.updatedAt !== goal.createdAt && (
+                    <span>Updated: {new Date(goal.updatedAt).toLocaleDateString()}</span>
+                  )}
                 </div>
+                {goal.notes && (
+                  <div style={{ 
+                    marginTop: '8px', 
+                    padding: '8px', 
+                    background: '#fff', 
+                    borderRadius: '4px',
+                    border: '1px solid #E6F0FF',
+                    fontSize: '12px',
+                    color: '#666',
+                    maxHeight: '60px',
+                    overflow: 'hidden'
+                  }}>
+                    <strong>Notes:</strong> {goal.notes.length > 100 ? `${goal.notes.substring(0, 100)}...` : goal.notes}
+                  </div>
+                )}
+                {goal.dependencies && (
+                  <div style={{ 
+                    marginTop: '4px', 
+                    fontSize: '12px', 
+                    color: '#666',
+                    fontStyle: 'italic'
+                  }}>
+                    <strong>Dependencies:</strong> {goal.dependencies}
+                  </div>
+                )}
                 {/* Progress Bar */}
                 <div style={{
                   width: '100%',
@@ -713,16 +799,39 @@ function GoalEditForm({ goal, categories, onSave, onCancel }) {
     title: goal.title,
     description: goal.description || '',
     categoryId: goal.categoryId,
+    status: goal.status,
     timeframe: goal.timeframe,
     priority: goal.priority,
     progress: goal.progress,
     notes: goal.notes || '',
-    dependencies: goal.dependencies || ''
+    dependencies: goal.dependencies || '',
+    completionDate: goal.completionDate || ''
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave({ ...goal, ...formData });
+    
+    // Clean up the data before saving
+    const cleanData = {
+      ...goal,
+      ...formData,
+      progress: parseInt(formData.progress) || 0,
+      notes: formData.notes || '',
+      dependencies: formData.dependencies || null,
+      completionDate: formData.completionDate || null
+    };
+    
+    // Auto-update status based on progress
+    if (cleanData.progress === 100) {
+      cleanData.status = 'Done';
+      cleanData.completionDate = new Date().toISOString();
+    } else if (cleanData.progress > 0) {
+      cleanData.status = 'In Progress';
+    } else {
+      cleanData.status = 'Not Started';
+    }
+    
+    onSave(cleanData);
   };
 
   return (
@@ -809,14 +918,45 @@ function GoalEditForm({ goal, categories, onSave, onCancel }) {
           <option value="High">High Priority</option>
         </select>
         
+        <select
+          value={formData.status}
+          onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+          required
+          style={{
+            padding: '12px',
+            borderRadius: '6px',
+            border: '1px solid #ccc',
+            fontFamily: "'PT Sans', sans-serif"
+          }}
+        >
+          <option value="Not Started">Not Started</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Done">Done</option>
+        </select>
+      </div>
+      
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
         <input
           type="number"
           value={formData.progress}
-          onChange={(e) => setFormData({ ...formData, progress: parseInt(e.target.value) })}
+          onChange={(e) => setFormData({ ...formData, progress: parseInt(e.target.value) || 0 })}
           placeholder="Progress (0-100)"
           min="0"
           max="100"
           required
+          style={{
+            padding: '12px',
+            borderRadius: '6px',
+            border: '1px solid #ccc',
+            fontFamily: "'PT Sans', sans-serif"
+          }}
+        />
+        
+        <input
+          type="date"
+          value={formData.completionDate ? formData.completionDate.split('T')[0] : ''}
+          onChange={(e) => setFormData({ ...formData, completionDate: e.target.value ? new Date(e.target.value).toISOString() : '' })}
+          placeholder="Completion Date (optional)"
           style={{
             padding: '12px',
             borderRadius: '6px',
@@ -829,8 +969,8 @@ function GoalEditForm({ goal, categories, onSave, onCancel }) {
       <textarea
         value={formData.notes}
         onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-        placeholder="Notes (optional)"
-        rows="3"
+        placeholder="Notes (optional) - Add your thoughts, progress updates, or important information"
+        rows="4"
         style={{
           padding: '12px',
           borderRadius: '6px',
@@ -843,8 +983,8 @@ function GoalEditForm({ goal, categories, onSave, onCancel }) {
       <textarea
         value={formData.dependencies}
         onChange={(e) => setFormData({ ...formData, dependencies: e.target.value })}
-        placeholder="Dependencies (goal IDs separated by commas, optional)"
-        rows="2"
+        placeholder="Dependencies (optional) - List other goals or tasks that must be completed first"
+        rows="3"
         style={{
           padding: '12px',
           borderRadius: '6px',
@@ -853,6 +993,18 @@ function GoalEditForm({ goal, categories, onSave, onCancel }) {
           resize: 'vertical'
         }}
       />
+      
+      {/* Status Change Indicator */}
+      <div style={{ 
+        padding: '8px 12px', 
+        background: '#E6F0FF', 
+        borderRadius: '6px',
+        border: '1px solid #6495ED',
+        fontSize: '14px',
+        color: '#333'
+      }}>
+        <strong>💡 Tip:</strong> When you set progress to 100%, the status will automatically change to "Done" and set the completion date.
+      </div>
       
       <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
         <button

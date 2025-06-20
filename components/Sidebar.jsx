@@ -1,9 +1,11 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
+import { usePathname } from 'next/navigation';
 
 export default function Sidebar() {
-  const router = useRouter();
+  const pathname = usePathname();
 
   const menuItems = [
     { href: '/dashboard', label: 'Dashboard', icon: '📊' },
@@ -60,24 +62,24 @@ export default function Sidebar() {
               gap: '12px',
               padding: '16px',
               borderRadius: '12px',
-              color: router.pathname === item.href ? '#fff' : '#333',
-              background: router.pathname === item.href ? '#6495ED' : 'transparent',
+              color: pathname === item.href ? '#fff' : '#333',
+              background: pathname === item.href ? '#6495ED' : 'transparent',
               textDecoration: 'none',
               marginBottom: '8px',
               transition: 'all 0.3s ease',
               fontFamily: "'PT Sans', sans-serif",
               fontSize: '16px',
-              fontWeight: router.pathname === item.href ? 600 : 400,
-              boxShadow: router.pathname === item.href ? '0 4px 12px rgba(100,149,237,0.3)' : 'none'
+              fontWeight: pathname === item.href ? 600 : 400,
+              boxShadow: pathname === item.href ? '0 4px 12px rgba(100,149,237,0.3)' : 'none'
             }}
             onMouseOver={(e) => {
-              if (router.pathname !== item.href) {
+              if (pathname !== item.href) {
                 e.target.style.background = '#E6F0FF';
                 e.target.style.color = '#6495ED';
               }
             }}
             onMouseOut={(e) => {
-              if (router.pathname !== item.href) {
+              if (pathname !== item.href) {
                 e.target.style.background = 'transparent';
                 e.target.style.color = '#333';
               }

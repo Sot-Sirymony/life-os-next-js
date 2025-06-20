@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function TimeTrackingSummary({ tasks }) {
+export default function TimeTrackingSummary({ tasks = [] }) {
   const calculateTimeMetrics = () => {
     const completedTasks = tasks.filter(t => t.status === 'Done');
     const inProgressTasks = tasks.filter(t => t.status === 'In Progress');

@@ -76,6 +76,7 @@ export default function LifeGoalsBoard() {
     completionDate: null
   });
   const [draggedGoal, setDraggedGoal] = useState(null);
+  const [dragOverStatus, setDragOverStatus] = useState(null);
   const [modalGoal, setModalGoal] = useState(null);
   const [editForm, setEditForm] = useState(null);
   const [expandedGoal, setExpandedGoal] = useState(null);
@@ -142,7 +143,12 @@ export default function LifeGoalsBoard() {
         return;
       }
 
-      const createdGoal = await goalsApi.create(newGoal);
+      const goalData = {
+        ...newGoal,
+        progress: newGoal.progress !== undefined ? parseInt(newGoal.progress) || 0 : 0
+      };
+
+      const createdGoal = await goalsApi.create(goalData);
       setGoals([...goals, createdGoal]);
       setIsAddingGoal(false);
       setNewGoal({
@@ -164,7 +170,22 @@ export default function LifeGoalsBoard() {
 
   const handleUpdateGoal = async (goal) => {
     try {
-      const updatedGoal = await goalsApi.update(goal.id, goal);
+      // Only send the fields that can be updated, not the entire goal object with relations
+      const updateData = {
+        id: goal.id,
+        title: goal.title,
+        description: goal.description,
+        categoryId: goal.categoryId,
+        status: goal.status,
+        progress: goal.progress !== undefined ? parseInt(goal.progress) || 0 : 0,
+        timeframe: goal.timeframe,
+        priority: goal.priority,
+        notes: goal.notes,
+        dependencies: goal.dependencies,
+        completionDate: goal.completionDate
+      };
+
+      const updatedGoal = await goalsApi.update(goal.id, updateData);
       setGoals(goals.map(g => g.id === updatedGoal.id ? updatedGoal : g));
       setIsEditingGoal(false);
       setCurrentGoal(null);
@@ -186,7 +207,12 @@ export default function LifeGoalsBoard() {
     try {
       const goal = goals.find(g => g.id === goalId);
       if (goal) {
-        const updatedGoal = await goalsApi.update(goalId, { ...goal, tasks });
+        const updateData = {
+          ...goal,
+          tasks,
+          progress: goal.progress !== undefined ? parseInt(goal.progress) || 0 : 0
+        };
+        const updatedGoal = await goalsApi.update(goalId, updateData);
         setGoals(goals.map(g => g.id === goalId ? updatedGoal : g));
       }
     } catch (error) {
@@ -211,11 +237,23 @@ export default function LifeGoalsBoard() {
     setDraggedGoal(goal);
   }
 
+  function onDragOver(e, status) {
+    e.preventDefault();
+    setDragOverStatus(status);
+  }
+
   function onDrop(status) {
     if (draggedGoal) {
-      setGoals(goals.map(g => g.id === draggedGoal.id ? { ...g, status } : g));
+      const updatedGoal = { ...draggedGoal, status };
+      handleUpdateGoal(updatedGoal);
       setDraggedGoal(null);
     }
+    setDragOverStatus(null);
+  }
+
+  function onDragEnd() {
+    setDraggedGoal(null);
+    setDragOverStatus(null);
   }
 
   function openEditModal(goal) {
@@ -282,7 +320,6 @@ export default function LifeGoalsBoard() {
     }}>
       {[
         { id: 'board', label: 'Goals Board', icon: '📋' },
-        { id: 'detail', label: 'Goal Details', icon: '📊' },
         { id: 'management', label: 'Goal Management', icon: '⚙️' },
         { id: 'task-management', label: 'Task Management', icon: '📝' },
         { id: 'analytics', label: 'Goal Analytics', icon: '📈' },
@@ -314,217 +351,277 @@ export default function LifeGoalsBoard() {
     </div>
   );
 
-  const renderKanbanView = () => (
-    <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', padding: '8px 0' }}>
-      {initialStatuses.map((status) => (
-        <div
-          key={status}
-          style={{
-            minWidth: '300px',
-            background: '#f8f9fa',
-            borderRadius: '12px',
-            padding: '16px',
-            border: `2px solid ${getStatusColor(status)}`
-          }}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={() => onDrop(status)}
-        >
-          <h3 style={{
-            margin: '0 0 16px 0',
-            fontSize: '18px',
-            color: '#333',
-            fontFamily: "'Poppins', sans-serif",
-            fontWeight: 600,
-            textAlign: 'center'
-          }}>
-            {status}
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {goals
-              .filter(goal => goal.status === status)
-              .map((goal) => (
-                <div
-                  key={goal.id}
-                  draggable
-                  onDragStart={() => onDragStart(goal)}
-                  onClick={() => handleGoalClick(goal)}
-                  style={{
-                    background: '#fff',
-                    borderRadius: '8px',
-                    padding: '16px',
-                    cursor: 'pointer',
-                    border: '2px solid #E6F0FF',
-                    transition: 'all 0.2s ease',
-                    position: 'relative'
-                  }}
-                  onMouseOver={(e) => {
-                    e.target.style.transform = 'translateY(-2px)';
-                    e.target.style.boxShadow = '0 4px 16px rgba(100,149,237,0.15)';
-                  }}
-                  onMouseOut={(e) => {
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = 'none';
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                    <div style={{
-                      fontSize: '20px',
-                      background: getCategoryColor(goal.categoryId),
-                      color: '#fff',
-                      borderRadius: '50%',
-                      width: '32px',
-                      height: '32px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0
-                    }}>
-                      {getCategoryIcon(goal.categoryId)}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <h4 style={{
-                        margin: '0 0 8px 0',
-                        fontSize: '16px',
-                        color: '#333',
-                        fontFamily: "'Poppins', sans-serif",
-                        fontWeight: 600
+  const renderKanbanView = () => {
+    // Apply filters to goals
+    let filteredGoals = goals;
+    
+    if (filters.category !== 'all') {
+      filteredGoals = filteredGoals.filter(goal => goal.categoryId === filters.category);
+    }
+    if (filters.priority !== 'all') {
+      filteredGoals = filteredGoals.filter(goal => goal.priority === filters.priority);
+    }
+    if (filters.timeframe !== 'all') {
+      filteredGoals = filteredGoals.filter(goal => goal.timeframe === filters.timeframe);
+    }
+    if (filters.status !== 'all') {
+      filteredGoals = filteredGoals.filter(goal => goal.status === filters.status);
+    }
+    if (searchQuery) {
+      filteredGoals = filteredGoals.filter(goal => 
+        goal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (goal.description && goal.description.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+    }
+
+    return (
+      <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', padding: '8px 0' }}>
+        {initialStatuses.map((status) => (
+          <div
+            key={status}
+            style={{
+              minWidth: '300px',
+              background: dragOverStatus === status ? '#E6F0FF' : '#f8f9fa',
+              borderRadius: '12px',
+              padding: '16px',
+              border: `2px solid ${dragOverStatus === status ? '#6495ED' : getStatusColor(status)}`,
+              transition: 'all 0.2s ease'
+            }}
+            onDragOver={(e) => onDragOver(e, status)}
+            onDrop={(e) => onDrop(status)}
+          >
+            <h3 style={{
+              margin: '0 0 16px 0',
+              fontSize: '18px',
+              color: '#333',
+              fontFamily: "'Poppins', sans-serif",
+              fontWeight: 600,
+              textAlign: 'center'
+            }}>
+              {status}
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {filteredGoals
+                .filter(goal => goal.status === status)
+                .map((goal) => (
+                  <div
+                    key={goal.id}
+                    draggable
+                    onDragStart={() => onDragStart(goal)}
+                    onDragEnd={onDragEnd}
+                    onClick={(e) => {
+                      // Only trigger click if not dragging
+                      if (!draggedGoal) {
+                        handleGoalClick(goal);
+                      }
+                    }}
+                    style={{
+                      background: '#fff',
+                      borderRadius: '8px',
+                      padding: '16px',
+                      cursor: draggedGoal?.id === goal.id ? 'grabbing' : 'grab',
+                      border: `2px solid ${draggedGoal?.id === goal.id ? '#6495ED' : '#E6F0FF'}`,
+                      transition: 'all 0.2s ease',
+                      position: 'relative',
+                      userSelect: 'none',
+                      opacity: draggedGoal?.id === goal.id ? 0.5 : 1,
+                      transform: draggedGoal?.id === goal.id ? 'rotate(5deg)' : 'none'
+                    }}
+                    onMouseOver={(e) => {
+                      if (!draggedGoal) {
+                        e.target.style.transform = 'translateY(-2px)';
+                        e.target.style.boxShadow = '0 4px 16px rgba(100,149,237,0.15)';
+                      }
+                    }}
+                    onMouseOut={(e) => {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                      <div style={{
+                        fontSize: '20px',
+                        background: getCategoryColor(goal.categoryId),
+                        color: '#fff',
+                        borderRadius: '50%',
+                        width: '32px',
+                        height: '32px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
                       }}>
-                        {goal.title}
-                      </h4>
-                      {goal.description && (
-                        <p style={{
-                          margin: '0 0 8px 0',
-                          fontSize: '14px',
-                          color: '#666',
-                          fontFamily: "'PT Sans', sans-serif"
-                        }}>
-                          {goal.description}
-                        </p>
-                      )}
-                      <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                        <span style={{
-                          background: goal.priority === 'High' ? '#F44336' : goal.priority === 'Medium' ? '#FF9800' : '#4CAF50',
-                          color: '#fff',
-                          padding: '2px 6px',
-                          borderRadius: '8px',
-                          fontSize: '10px',
-                          fontWeight: 600
-                        }}>
-                          {goal.priority}
-                        </span>
-                        <span style={{
-                          background: goal.timeframe === 'Short' ? '#4CAF50' : goal.timeframe === 'Medium' ? '#FF9800' : '#6495ED',
-                          color: '#fff',
-                          padding: '2px 6px',
-                          borderRadius: '8px',
-                          fontSize: '10px',
-                          fontWeight: 600
-                        }}>
-                          {goal.timeframe}
-                        </span>
+                        {getCategoryIcon(goal.categoryId)}
                       </div>
-                      {renderProgressBar(goal.progress)}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
-                        <span style={{ fontSize: '12px', color: '#666' }}>
-                          Progress: {goal.progress}%
-                        </span>
-                        <span style={{ fontSize: '12px', color: '#666' }}>
-                          {getCategoryName(goal.categoryId)}
-                        </span>
+                      <div style={{ flex: 1 }}>
+                        <h4 style={{
+                          margin: '0 0 8px 0',
+                          fontSize: '16px',
+                          color: '#333',
+                          fontFamily: "'Poppins', sans-serif",
+                          fontWeight: 600
+                        }}>
+                          {goal.title}
+                        </h4>
+                        {goal.description && (
+                          <p style={{
+                            margin: '0 0 8px 0',
+                            fontSize: '14px',
+                            color: '#666',
+                            fontFamily: "'PT Sans', sans-serif"
+                          }}>
+                            {goal.description}
+                          </p>
+                        )}
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                          <span style={{
+                            background: goal.priority === 'High' ? '#F44336' : goal.priority === 'Medium' ? '#FF9800' : '#4CAF50',
+                            color: '#fff',
+                            padding: '2px 6px',
+                            borderRadius: '8px',
+                            fontSize: '10px',
+                            fontWeight: 600
+                          }}>
+                            {goal.priority}
+                          </span>
+                          <span style={{
+                            background: goal.timeframe === 'Short' ? '#4CAF50' : goal.timeframe === 'Medium' ? '#FF9800' : '#6495ED',
+                            color: '#fff',
+                            padding: '2px 6px',
+                            borderRadius: '8px',
+                            fontSize: '10px',
+                            fontWeight: 600
+                          }}>
+                            {goal.timeframe}
+                          </span>
+                        </div>
+                        {renderProgressBar(goal.progress)}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
+                          <span style={{ fontSize: '12px', color: '#666' }}>
+                            Progress: {goal.progress}%
+                          </span>
+                          <span style={{ fontSize: '12px', color: '#666' }}>
+                            {getCategoryName(goal.categoryId)}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+            </div>
           </div>
-        </div>
-      ))}
-    </div>
-  );
+        ))}
+      </div>
+    );
+  };
 
-  const renderListView = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-      {goals.map((goal) => (
-        <div
-          key={goal.id}
-          onClick={() => handleGoalClick(goal)}
-          style={{
-            background: '#fff',
-            borderRadius: '8px',
-            padding: '16px',
-            cursor: 'pointer',
-            border: '2px solid #E6F0FF',
-            transition: 'all 0.2s ease'
-          }}
-          onMouseOver={(e) => {
-            e.target.style.transform = 'translateY(-2px)';
-            e.target.style.boxShadow = '0 4px 16px rgba(100,149,237,0.15)';
-          }}
-          onMouseOut={(e) => {
-            e.target.style.transform = 'translateY(0)';
-            e.target.style.boxShadow = 'none';
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{
-              fontSize: '24px',
-              background: getCategoryColor(goal.categoryId),
-              color: '#fff',
-              borderRadius: '50%',
-              width: '48px',
-              height: '48px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}>
-              {getCategoryIcon(goal.categoryId)}
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                <h3 style={{
-                  margin: 0,
-                  fontSize: '18px',
-                  color: '#333',
-                  fontFamily: "'Poppins', sans-serif",
-                  fontWeight: 600
-                }}>
-                  {goal.title}
-                </h3>
-                <span style={{
-                  background: goal.status === 'Done' ? '#4CAF50' : goal.status === 'In Progress' ? '#FF9800' : '#666',
-                  color: '#fff',
-                  padding: '4px 8px',
-                  borderRadius: '12px',
-                  fontSize: '10px',
-                  fontWeight: 600
-                }}>
-                  {goal.status}
-                </span>
+  const renderListView = () => {
+    // Apply filters to goals
+    let filteredGoals = goals;
+    
+    if (filters.category !== 'all') {
+      filteredGoals = filteredGoals.filter(goal => goal.categoryId === filters.category);
+    }
+    if (filters.priority !== 'all') {
+      filteredGoals = filteredGoals.filter(goal => goal.priority === filters.priority);
+    }
+    if (filters.timeframe !== 'all') {
+      filteredGoals = filteredGoals.filter(goal => goal.timeframe === filters.timeframe);
+    }
+    if (filters.status !== 'all') {
+      filteredGoals = filteredGoals.filter(goal => goal.status === filters.status);
+    }
+    if (searchQuery) {
+      filteredGoals = filteredGoals.filter(goal => 
+        goal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (goal.description && goal.description.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+    }
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {filteredGoals.map((goal) => (
+          <div
+            key={goal.id}
+            onClick={() => handleGoalClick(goal)}
+            style={{
+              background: '#fff',
+              borderRadius: '8px',
+              padding: '16px',
+              cursor: 'pointer',
+              border: '2px solid #E6F0FF',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseOver={(e) => {
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = '0 4px 16px rgba(100,149,237,0.15)';
+            }}
+            onMouseOut={(e) => {
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = 'none';
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{
+                fontSize: '24px',
+                background: getCategoryColor(goal.categoryId),
+                color: '#fff',
+                borderRadius: '50%',
+                width: '48px',
+                height: '48px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                {getCategoryIcon(goal.categoryId)}
               </div>
-              {goal.description && (
-                <p style={{
-                  margin: '0 0 8px 0',
-                  fontSize: '14px',
-                  color: '#666',
-                  fontFamily: "'PT Sans', sans-serif"
-                }}>
-                  {goal.description}
-                </p>
-              )}
-              <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#666' }}>
-                <span>Category: {getCategoryName(goal.categoryId)}</span>
-                <span>Priority: {goal.priority}</span>
-                <span>Timeframe: {goal.timeframe}</span>
-                <span>Progress: {goal.progress}%</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <h3 style={{
+                    margin: 0,
+                    fontSize: '18px',
+                    color: '#333',
+                    fontFamily: "'Poppins', sans-serif",
+                    fontWeight: 600
+                  }}>
+                    {goal.title}
+                  </h3>
+                  <span style={{
+                    background: goal.status === 'Done' ? '#4CAF50' : goal.status === 'In Progress' ? '#FF9800' : '#666',
+                    color: '#fff',
+                    padding: '4px 8px',
+                    borderRadius: '12px',
+                    fontSize: '10px',
+                    fontWeight: 600
+                  }}>
+                    {goal.status}
+                  </span>
+                </div>
+                {goal.description && (
+                  <p style={{
+                    margin: '0 0 8px 0',
+                    fontSize: '14px',
+                    color: '#666',
+                    fontFamily: "'PT Sans', sans-serif"
+                  }}>
+                    {goal.description}
+                  </p>
+                )}
+                <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#666' }}>
+                  <span>Category: {getCategoryName(goal.categoryId)}</span>
+                  <span>Priority: {goal.priority}</span>
+                  <span>Timeframe: {goal.timeframe}</span>
+                  <span>Progress: {goal.progress}%</span>
+                </div>
+                {renderProgressBar(goal.progress)}
               </div>
-              {renderProgressBar(goal.progress)}
             </div>
           </div>
-        </div>
-      ))}
-    </div>
-  );
+        ))}
+      </div>
+    );
+  };
 
   const groupGoalsByCategory = (goals) => {
     const groups = {};

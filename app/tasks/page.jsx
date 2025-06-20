@@ -1,3 +1,5 @@
+'use client';
+
 import Sidebar from '../../components/Sidebar';
 import AITaskFilter from '../../components/Progress/AITaskFilter';
 import { useState, useEffect } from 'react';

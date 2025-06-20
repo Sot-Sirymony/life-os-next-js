@@ -10,14 +10,28 @@ export default function GoalCategories() {
   const [tasks, setTasks] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [isEditingCategory, setIsEditingCategory] = useState(false);
+  const [editingCategory, setEditingCategory] = useState(null);
   const [newCategory, setNewCategory] = useState({ name: '', description: '', icon: '📁', color: '#6495ED' });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
   const [activeTab, setActiveTab] = useState('categories'); // categories, analytics, management, templates
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Clear error and success messages after 5 seconds
+  useEffect(() => {
+    if (error || successMessage) {
+      const timer = setTimeout(() => {
+        setError(null);
+        setSuccessMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, successMessage]);
 
   const fetchData = async () => {
     try {
@@ -75,6 +89,7 @@ export default function GoalCategories() {
         await fetchData();
         setIsAddingCategory(false);
         setNewCategory({ name: '', description: '', icon: '📁', color: '#6495ED' });
+        setSuccessMessage('Category created successfully');
       } else {
         throw new Error('Failed to create category');
       }
@@ -120,13 +135,67 @@ export default function GoalCategories() {
   };
 
   const handleEditCategory = (category) => {
-    // This will be handled by CategoryManagement component
-    console.log('Edit category:', category);
+    setEditingCategory(category);
+    setIsEditingCategory(true);
+    setNewCategory({
+      name: category.name,
+      description: category.description || '',
+      icon: category.icon,
+      color: category.color
+    });
   };
 
-  const handleDeleteCategory = (category) => {
-    // This will be handled by CategoryManagement component
-    console.log('Delete category:', category);
+  const handleDeleteCategory = async (category) => {
+    if (window.confirm(`Are you sure you want to delete the category "${category.name}"? This action cannot be undone.`)) {
+      try {
+        const response = await fetch(`/api/categories/${category.id}`, {
+          method: 'DELETE',
+        });
+
+        if (response.ok) {
+          // Remove the category from the list
+          const updatedCategories = categories.filter(c => c.id !== category.id);
+          setCategories(updatedCategories);
+          setSelectedCategory(null);
+          setSuccessMessage('Category deleted successfully');
+        } else {
+          throw new Error('Failed to delete category');
+        }
+      } catch (error) {
+        console.error('Error deleting category:', error);
+        setError('Failed to delete category. Please try again.');
+      }
+    }
+  };
+
+  const handleUpdateCategory = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`/api/categories/${editingCategory.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newCategory),
+      });
+
+      if (response.ok) {
+        const updatedCategory = await response.json();
+        const updatedCategories = categories.map(c => 
+          c.id === editingCategory.id ? updatedCategory : c
+        );
+        setCategories(updatedCategories);
+        setIsEditingCategory(false);
+        setEditingCategory(null);
+        setNewCategory({ name: '', description: '', icon: '📁', color: '#6495ED' });
+        setSuccessMessage('Category updated successfully');
+      } else {
+        throw new Error('Failed to update category');
+      }
+    } catch (error) {
+      console.error('Error updating category:', error);
+      setError('Failed to update category. Please try again.');
+    }
   };
 
   if (isLoading) {
@@ -185,6 +254,35 @@ export default function GoalCategories() {
           Add Category
         </button>
       </div>
+
+      {/* Error and Success Messages */}
+      {error && (
+        <div style={{
+          background: '#ffebee',
+          color: '#c62828',
+          padding: '12px 16px',
+          borderRadius: '6px',
+          marginBottom: '16px',
+          border: '1px solid #ffcdd2',
+          fontFamily: "'PT Sans', sans-serif"
+        }}>
+          ⚠️ {error}
+        </div>
+      )}
+
+      {successMessage && (
+        <div style={{
+          background: '#e8f5e8',
+          color: '#2e7d32',
+          padding: '12px 16px',
+          borderRadius: '6px',
+          marginBottom: '16px',
+          border: '1px solid #c8e6c9',
+          fontFamily: "'PT Sans', sans-serif"
+        }}>
+          ✅ {successMessage}
+        </div>
+      )}
 
       {/* Tab Navigation */}
       <div style={{ 
@@ -476,6 +574,134 @@ export default function GoalCategories() {
                 <button
                   type="button"
                   onClick={() => setIsAddingCategory(false)}
+                  style={{
+                    background: '#eee',
+                    color: '#333',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '12px 24px',
+                    fontFamily: "'Poppins', sans-serif",
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    flex: 1
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Category Modal */}
+      {isEditingCategory && editingCategory && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(0,0,0,0.18)',
+          zIndex: 3000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            background: '#fff',
+            borderRadius: '12px',
+            padding: '24px',
+            minWidth: '400px',
+            maxWidth: '90vw',
+            boxShadow: '0 4px 24px rgba(100,149,237,0.18)',
+            fontFamily: "'PT Sans', sans-serif"
+          }}>
+            <h3 style={{ 
+              fontFamily: "'Poppins', sans-serif",
+              color: '#6495ED',
+              marginBottom: '16px'
+            }}>
+              Edit Category
+            </h3>
+            <form onSubmit={handleUpdateCategory} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <input
+                type="text"
+                value={newCategory.name}
+                onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+                placeholder="Category Name"
+                required
+                style={{
+                  padding: '12px',
+                  borderRadius: '6px',
+                  border: '1px solid #ccc',
+                  fontFamily: "'PT Sans', sans-serif"
+                }}
+              />
+              <textarea
+                value={newCategory.description}
+                onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
+                placeholder="Category Description (optional)"
+                rows="3"
+                style={{
+                  padding: '12px',
+                  borderRadius: '6px',
+                  border: '1px solid #ccc',
+                  fontFamily: "'PT Sans', sans-serif",
+                  resize: 'vertical'
+                }}
+              />
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <input
+                  type="text"
+                  value={newCategory.icon}
+                  onChange={(e) => setNewCategory({ ...newCategory, icon: e.target.value })}
+                  placeholder="Icon (emoji)"
+                  style={{
+                    padding: '12px',
+                    borderRadius: '6px',
+                    border: '1px solid #ccc',
+                    fontFamily: "'PT Sans', sans-serif",
+                    width: '100px'
+                  }}
+                />
+                <input
+                  type="color"
+                  value={newCategory.color}
+                  onChange={(e) => setNewCategory({ ...newCategory, color: e.target.value })}
+                  style={{
+                    padding: '8px',
+                    borderRadius: '6px',
+                    border: '1px solid #ccc',
+                    width: '60px',
+                    height: '44px'
+                  }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                <button
+                  type="submit"
+                  style={{
+                    background: '#4CAF50',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '12px 24px',
+                    fontFamily: "'Poppins', sans-serif",
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    flex: 1
+                  }}
+                >
+                  Update Category
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditingCategory(false);
+                    setEditingCategory(null);
+                    setNewCategory({ name: '', description: '', icon: '📁', color: '#6495ED' });
+                  }}
                   style={{
                     background: '#eee',
                     color: '#333',
