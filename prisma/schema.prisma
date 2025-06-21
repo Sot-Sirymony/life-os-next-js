@@ -24,6 +24,7 @@ model User {
   categories Category[]
   preferences UserPreferences?
   activities Activity[]
+  notes     Note[]
 
   @@map("users")
 }
@@ -128,4 +129,20 @@ model Activity {
   createdAt   DateTime @default(now())
 
   @@map("activities")
+}
+
+model Note {
+  id          String   @id @default(uuid())
+  title       String
+  content     String
+  tags        String?  // JSON array of tags
+  isPinned    Boolean  @default(false)
+  isArchived  Boolean  @default(false)
+  color       String?  // For color coding
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("notes")
 }

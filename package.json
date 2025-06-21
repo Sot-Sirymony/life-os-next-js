@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:docker": "cp .env.docker .env && next dev",
+    "dev:local": "cp .env.local .env && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -13,11 +15,19 @@
     "db:stop": "docker compose down",
     "db:reset": "docker compose down -v && docker compose up -d postgres",
     "db:migrate": "prisma migrate deploy",
+    "db:migrate:docker": "cp .env.docker .env && prisma migrate deploy",
+    "db:migrate:local": "cp .env.local .env && prisma migrate deploy",
     "db:generate": "prisma generate",
     "db:seed": "prisma db seed",
+    "db:seed:docker": "cp .env.docker .env && prisma db seed",
+    "db:seed:local": "cp .env.local .env && prisma db seed",
     "db:studio": "prisma studio",
+    "db:studio:docker": "cp .env.docker .env && prisma studio",
+    "db:studio:local": "cp .env.local .env && prisma studio",
     "db:export": "node scripts/export-sqlite-data.js",
-    "db:migrate-to-postgres": "./scripts/migrate-to-postgresql.sh"
+    "db:migrate-to-postgres": "./scripts/migrate-to-postgresql.sh",
+    "db:setup:docker": "cp .env.docker .env && prisma generate && prisma migrate deploy && prisma db seed",
+    "db:setup:local": "cp .env.local .env && prisma generate && prisma migrate deploy && prisma db seed"
   },
   "dependencies": {
     "@fontsource/poppins": "^5.2.6",
@@ -39,6 +49,7 @@
     "@eslint/eslintrc": "^3",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
+    "@types/react": "19.1.8",
     "eslint": "^9",
     "eslint-config-next": "15.3.3",
     "jest": "^30.0.0",
