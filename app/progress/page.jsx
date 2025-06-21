@@ -1,6 +1,6 @@
 'use client';
 
-import Sidebar from '../../components/Sidebar';
+import ResponsiveLayout from '../../components/ResponsiveLayout';
 import SummaryCards from '../../components/Progress/SummaryCards';
 import GoalProgressBoard from '../../components/Progress/GoalProgressBoard';
 import AITaskFilter from '../../components/Progress/AITaskFilter';
@@ -38,55 +38,30 @@ export default function ProgressPage() {
   }, []);
 
   return (
-    <div style={{ 
-      display: 'flex',
-      background: '#E6F0FF',
-      minHeight: '100vh',
-      fontFamily: "'PT Sans', sans-serif"
-    }}>
-      <Sidebar />
-      <main style={{ 
-        flex: 1, 
-        padding: '24px',
-        overflowY: 'auto'
-      }}>
-        <div style={{ marginBottom: '24px' }}>
-          <h1 style={{ 
-            margin: '0 0 8px 0',
-            fontSize: '32px',
-            color: '#333',
-            fontFamily: "'Poppins', sans-serif",
-            fontWeight: 600
-          }}>
-            Progress Tracking
-          </h1>
-          <p style={{ 
-            margin: 0,
-            color: '#666',
-            fontSize: '16px'
-          }}>
-            Monitor your progress and track achievements across all your goals.
-          </p>
+    <ResponsiveLayout 
+      title="Progress Tracking" 
+      description="Monitor your progress and track achievements across all your goals."
+    >
+      {isLoading ? (
+        <div style={{
+          background: '#fff',
+          borderRadius: '12px',
+          padding: 'clamp(16px, 4vw, 24px)',
+          textAlign: 'center',
+          color: '#666',
+          boxShadow: '0 2px 8px rgba(100,149,237,0.08)'
+        }}>
+          <div style={{ fontSize: 'clamp(32px, 8vw, 48px)', marginBottom: '16px' }}>⏳</div>
+          <div style={{ fontSize: 'clamp(16px, 4vw, 18px)', color: '#6495ED', marginBottom: '8px' }}>Loading progress data...</div>
+          <div style={{ fontSize: 'clamp(14px, 3vw, 16px)', color: '#666' }}>Please wait while we fetch your data</div>
         </div>
-        
-        {isLoading ? (
-          <div style={{
-            background: '#fff',
-            borderRadius: '12px',
-            padding: '24px',
-            textAlign: 'center',
-            color: '#666'
-          }}>
-            Loading progress data...
-          </div>
-        ) : (
-          <div style={{ display: 'grid', gap: '24px' }}>
-            <SummaryCards goals={goals} tasks={tasks} />
-            <GoalProgressBoard goals={goals} />
-            <AITaskFilter tasks={tasks} />
-          </div>
-        )}
-      </main>
-    </div>
+      ) : (
+        <div style={{ display: 'grid', gap: 'clamp(16px, 4vw, 24px)' }}>
+          <SummaryCards goals={goals} tasks={tasks} />
+          <GoalProgressBoard goals={goals} />
+          <AITaskFilter tasks={tasks} />
+        </div>
+      )}
+    </ResponsiveLayout>
   );
 } 

@@ -69,10 +69,17 @@ export default function TimeTrackingSummary({ tasks = [] }) {
   const metrics = calculateTimeMetrics();
 
   const formatTime = (minutes) => {
-    if (minutes < 60) return `${minutes}m`;
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+    if (minutes < 60) {
+      return `${minutes}m`;
+    } else if (minutes < 1440) { // less than 24 hours
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      return `${hours}h ${mins}m`;
+    } else {
+      const days = Math.floor(minutes / 1440);
+      const hours = Math.floor((minutes % 1440) / 60);
+      return `${days}d ${hours}h`;
+    }
   };
 
   const getProductivityLevel = (weeklyHours) => {
@@ -89,13 +96,13 @@ export default function TimeTrackingSummary({ tasks = [] }) {
     <div style={{
       background: '#fff',
       borderRadius: '12px',
-      padding: '24px',
+      padding: 'clamp(16px, 4vw, 24px)',
       boxShadow: '0 2px 8px rgba(100,149,237,0.08)',
       marginBottom: '24px'
     }}>
       <h2 style={{ 
         margin: '0 0 20px 0', 
-        fontSize: '24px', 
+        fontSize: 'clamp(18px, 4vw, 24px)', 
         color: '#333',
         fontFamily: "'Poppins', sans-serif",
         fontWeight: 600
@@ -103,18 +110,22 @@ export default function TimeTrackingSummary({ tasks = [] }) {
         Time Tracking Summary
       </h2>
       
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+        gap: 'clamp(16px, 3vw, 20px)' 
+      }}>
         {/* Total Time Spent */}
         <div style={{
           background: '#f8f9fa',
           borderRadius: '10px',
-          padding: '20px',
+          padding: 'clamp(16px, 3vw, 20px)',
           textAlign: 'center',
           border: '2px solid #6495ED'
         }}>
-          <div style={{ fontSize: '32px', marginBottom: '8px' }}>⏱️</div>
+          <div style={{ fontSize: 'clamp(24px, 5vw, 32px)', marginBottom: '8px' }}>⏱️</div>
           <div style={{
-            fontSize: '28px',
+            fontSize: 'clamp(20px, 5vw, 28px)',
             fontWeight: 'bold',
             color: '#6495ED',
             fontFamily: "'Poppins', sans-serif",
@@ -123,7 +134,7 @@ export default function TimeTrackingSummary({ tasks = [] }) {
             {formatTime(metrics.totalTimeSpent)}
           </div>
           <div style={{
-            fontSize: '16px',
+            fontSize: 'clamp(14px, 3vw, 16px)',
             color: '#333',
             fontFamily: "'PT Sans', sans-serif",
             fontWeight: 600
@@ -131,7 +142,7 @@ export default function TimeTrackingSummary({ tasks = [] }) {
             Total Time Spent
           </div>
           <div style={{
-            fontSize: '14px',
+            fontSize: 'clamp(12px, 2.5vw, 14px)',
             color: '#666',
             fontFamily: "'PT Sans', sans-serif",
             marginTop: '4px'
@@ -144,12 +155,12 @@ export default function TimeTrackingSummary({ tasks = [] }) {
         <div style={{
           background: '#f8f9fa',
           borderRadius: '10px',
-          padding: '20px',
+          padding: 'clamp(16px, 3vw, 20px)',
           textAlign: 'center'
         }}>
-          <div style={{ fontSize: '32px', marginBottom: '8px' }}>📅</div>
+          <div style={{ fontSize: 'clamp(24px, 5vw, 32px)', marginBottom: '8px' }}>📅</div>
           <div style={{
-            fontSize: '28px',
+            fontSize: 'clamp(20px, 5vw, 28px)',
             fontWeight: 'bold',
             color: '#4CAF50',
             fontFamily: "'Poppins', sans-serif",
@@ -158,7 +169,7 @@ export default function TimeTrackingSummary({ tasks = [] }) {
             {formatTime(metrics.todayTimeSpent)}
           </div>
           <div style={{
-            fontSize: '16px',
+            fontSize: 'clamp(14px, 3vw, 16px)',
             color: '#333',
             fontFamily: "'PT Sans', sans-serif",
             fontWeight: 600
@@ -166,195 +177,187 @@ export default function TimeTrackingSummary({ tasks = [] }) {
             Today's Progress
           </div>
           <div style={{
-            fontSize: '14px',
+            fontSize: 'clamp(12px, 2.5vw, 14px)',
             color: '#666',
             fontFamily: "'PT Sans', sans-serif",
             marginTop: '4px'
           }}>
-            {Math.round(metrics.todayTimeSpent / 60)} hours today
+            Time spent today
           </div>
         </div>
 
-        {/* Weekly Productivity */}
+        {/* Weekly Progress */}
         <div style={{
           background: '#f8f9fa',
           borderRadius: '10px',
-          padding: '20px',
-          textAlign: 'center',
-          border: `2px solid ${productivityLevel.color}`
+          padding: 'clamp(16px, 3vw, 20px)',
+          textAlign: 'center'
         }}>
-          <div style={{ fontSize: '32px', marginBottom: '8px' }}>
-            {productivityLevel.emoji}
-          </div>
+          <div style={{ fontSize: 'clamp(24px, 5vw, 32px)', marginBottom: '8px' }}>📊</div>
           <div style={{
-            fontSize: '28px',
+            fontSize: 'clamp(20px, 5vw, 28px)',
             fontWeight: 'bold',
-            color: productivityLevel.color,
+            color: '#FF9800',
             fontFamily: "'Poppins', sans-serif",
             marginBottom: '4px'
           }}>
-            {weeklyHours}h
+            {formatTime(metrics.weeklyTimeSpent)}
           </div>
           <div style={{
-            fontSize: '16px',
+            fontSize: 'clamp(14px, 3vw, 16px)',
             color: '#333',
             fontFamily: "'PT Sans', sans-serif",
             fontWeight: 600
           }}>
-            {productivityLevel.level} Productivity
+            Weekly Progress
           </div>
           <div style={{
-            fontSize: '14px',
+            fontSize: 'clamp(12px, 2.5vw, 14px)',
             color: '#666',
             fontFamily: "'PT Sans', sans-serif",
             marginTop: '4px'
           }}>
-            This week
+            Last 7 days
           </div>
         </div>
 
-        {/* AI Time Savings */}
+        {/* Time Accuracy */}
         <div style={{
           background: '#f8f9fa',
           borderRadius: '10px',
-          padding: '20px',
+          padding: 'clamp(16px, 3vw, 20px)',
           textAlign: 'center'
         }}>
-          <div style={{ fontSize: '32px', marginBottom: '8px' }}>🤖</div>
+          <div style={{ fontSize: 'clamp(24px, 5vw, 32px)', marginBottom: '8px' }}>🎯</div>
           <div style={{
-            fontSize: '28px',
+            fontSize: 'clamp(20px, 5vw, 28px)',
             fontWeight: 'bold',
             color: '#9C27B0',
             fontFamily: "'Poppins', sans-serif",
             marginBottom: '4px'
           }}>
-            {formatTime(Math.round(metrics.aiTimeSavings))}
+            {metrics.timeAccuracy}%
           </div>
           <div style={{
-            fontSize: '16px',
+            fontSize: 'clamp(14px, 3vw, 16px)',
             color: '#333',
             fontFamily: "'PT Sans', sans-serif",
             fontWeight: 600
           }}>
-            AI Time Savings
+            Time Accuracy
           </div>
           <div style={{
-            fontSize: '14px',
+            fontSize: 'clamp(12px, 2.5vw, 14px)',
             color: '#666',
             fontFamily: "'PT Sans', sans-serif",
             marginTop: '4px'
           }}>
-            {metrics.aiOptimizedTasks} AI tasks
+            Estimated vs actual
           </div>
         </div>
       </div>
 
-      {/* Detailed Metrics */}
-      <div style={{ marginTop: '24px' }}>
-        <h3 style={{
-          margin: '0 0 16px 0',
-          fontSize: '18px',
-          color: '#333',
-          fontFamily: "'Poppins', sans-serif",
-          fontWeight: 600
+      {/* Additional Metrics */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+        gap: 'clamp(16px, 3vw, 20px)',
+        marginTop: 'clamp(16px, 3vw, 20px)'
+      }}>
+        {/* AI Time Savings */}
+        <div style={{
+          background: '#E8F5E8',
+          borderRadius: '8px',
+          padding: 'clamp(12px, 3vw, 16px)',
+          border: '2px solid #4CAF50'
         }}>
-          Detailed Metrics
-        </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
           <div style={{
-            background: '#E8F5E8',
-            borderRadius: '8px',
-            padding: '16px',
-            border: '2px solid #4CAF50'
+            fontSize: 'clamp(12px, 2.5vw, 14px)',
+            color: '#4CAF50',
+            fontFamily: "'PT Sans', sans-serif",
+            fontWeight: 600,
+            marginBottom: '4px'
           }}>
-            <div style={{
-              fontSize: '14px',
-              color: '#4CAF50',
-              fontFamily: "'PT Sans', sans-serif",
-              fontWeight: 600,
-              marginBottom: '4px'
-            }}>
-              ⏱️ Time Accuracy
-            </div>
-            <div style={{
-              fontSize: '20px',
-              color: '#333',
-              fontFamily: "'Poppins', sans-serif",
-              fontWeight: 600
-            }}>
-              {metrics.timeAccuracy}%
-            </div>
-            <div style={{
-              fontSize: '12px',
-              color: '#666',
-              fontFamily: "'PT Sans', sans-serif"
-            }}>
-              Estimated vs Actual
-            </div>
+            🤖 AI Time Savings
           </div>
-          
           <div style={{
-            background: '#E3F2FD',
-            borderRadius: '8px',
-            padding: '16px',
-            border: '2px solid #6495ED'
+            fontSize: 'clamp(16px, 3vw, 20px)',
+            color: '#333',
+            fontFamily: "'Poppins', sans-serif",
+            fontWeight: 600
           }}>
-            <div style={{
-              fontSize: '14px',
-              color: '#6495ED',
-              fontFamily: "'PT Sans', sans-serif",
-              fontWeight: 600,
-              marginBottom: '4px'
-            }}>
-              📊 Average Task Duration
-            </div>
-            <div style={{
-              fontSize: '20px',
-              color: '#333',
-              fontFamily: "'Poppins', sans-serif",
-              fontWeight: 600
-            }}>
-              {formatTime(metrics.avgTaskDuration)}
-            </div>
-            <div style={{
-              fontSize: '12px',
-              color: '#666',
-              fontFamily: "'PT Sans', sans-serif"
-            }}>
-              Per completed task
-            </div>
+            {formatTime(metrics.aiTimeSavings)}
           </div>
-          
           <div style={{
-            background: '#FFF3E0',
-            borderRadius: '8px',
-            padding: '16px',
-            border: '2px solid #FF9800'
+            fontSize: 'clamp(10px, 2.5vw, 12px)',
+            color: '#666',
+            fontFamily: "'PT Sans', sans-serif"
           }}>
-            <div style={{
-              fontSize: '14px',
-              color: '#FF9800',
-              fontFamily: "'PT Sans', sans-serif",
-              fontWeight: 600,
-              marginBottom: '4px'
-            }}>
-              🔄 In Progress
-            </div>
-            <div style={{
-              fontSize: '20px',
-              color: '#333',
-              fontFamily: "'Poppins', sans-serif",
-              fontWeight: 600
-            }}>
-              {metrics.inProgressTasks}
-            </div>
-            <div style={{
-              fontSize: '12px',
-              color: '#666',
-              fontFamily: "'PT Sans', sans-serif"
-            }}>
-              Active tasks
-            </div>
+            Time saved with AI
+          </div>
+        </div>
+        
+        <div style={{
+          background: '#E3F2FD',
+          borderRadius: '8px',
+          padding: 'clamp(12px, 3vw, 16px)',
+          border: '2px solid #6495ED'
+        }}>
+          <div style={{
+            fontSize: 'clamp(12px, 2.5vw, 14px)',
+            color: '#6495ED',
+            fontFamily: "'PT Sans', sans-serif",
+            fontWeight: 600,
+            marginBottom: '4px'
+          }}>
+            📊 Average Task Duration
+          </div>
+          <div style={{
+            fontSize: 'clamp(16px, 3vw, 20px)',
+            color: '#333',
+            fontFamily: "'Poppins', sans-serif",
+            fontWeight: 600
+          }}>
+            {formatTime(metrics.avgTaskDuration)}
+          </div>
+          <div style={{
+            fontSize: 'clamp(10px, 2.5vw, 12px)',
+            color: '#666',
+            fontFamily: "'PT Sans', sans-serif"
+          }}>
+            Per completed task
+          </div>
+        </div>
+        
+        <div style={{
+          background: '#FFF3E0',
+          borderRadius: '8px',
+          padding: 'clamp(12px, 3vw, 16px)',
+          border: '2px solid #FF9800'
+        }}>
+          <div style={{
+            fontSize: 'clamp(12px, 2.5vw, 14px)',
+            color: '#FF9800',
+            fontFamily: "'PT Sans', sans-serif",
+            fontWeight: 600,
+            marginBottom: '4px'
+          }}>
+            🔄 In Progress
+          </div>
+          <div style={{
+            fontSize: 'clamp(16px, 3vw, 20px)',
+            color: '#333',
+            fontFamily: "'Poppins', sans-serif",
+            fontWeight: 600
+          }}>
+            {metrics.inProgressTasks}
+          </div>
+          <div style={{
+            fontSize: 'clamp(10px, 2.5vw, 12px)',
+            color: '#666',
+            fontFamily: "'PT Sans', sans-serif"
+          }}>
+            Active tasks
           </div>
         </div>
       </div>

@@ -6,6 +6,8 @@ import GoalManagement from "./GoalManagement";
 import GoalAnalytics from "./GoalAnalytics";
 import TaskManagement from "./TaskManagement";
 import TaskAnalytics from "./TaskAnalytics";
+import useAlert from "../../hooks/useAlert";
+import AlertContainer from "../common/AlertContainer";
 
 // Mock API for goals - replace with actual API calls
 const goalsApi = {
@@ -95,6 +97,9 @@ export default function LifeGoalsBoard() {
   const [showDependencies, setShowDependencies] = useState({});
   const [selectedGoal, setSelectedGoal] = useState(null);
 
+  // Alert functionality
+  const { alerts, showSuccess, showError, removeAlert } = useAlert();
+
   // Fetch goals and categories on component mount
   useEffect(() => {
     fetchGoals();
@@ -139,7 +144,7 @@ export default function LifeGoalsBoard() {
   const handleAddGoal = async () => {
     try {
       if (!newGoal.title || !newGoal.categoryId) {
-        console.error("Title and category are required");
+        showError("Title and category are required");
         return;
       }
 
@@ -163,8 +168,10 @@ export default function LifeGoalsBoard() {
         dependencies: "[]",
         completionDate: null
       });
+      showSuccess("Goal created successfully!");
     } catch (error) {
       console.error("Failed to create goal:", error);
+      showError("Failed to create goal. Please try again.");
     }
   };
 
@@ -189,8 +196,10 @@ export default function LifeGoalsBoard() {
       setGoals(goals.map(g => g.id === updatedGoal.id ? updatedGoal : g));
       setIsEditingGoal(false);
       setCurrentGoal(null);
+      showSuccess("Goal updated successfully!");
     } catch (error) {
       console.error("Failed to update goal:", error);
+      showError("Failed to update goal. Please try again.");
     }
   };
 
@@ -198,8 +207,10 @@ export default function LifeGoalsBoard() {
     try {
       await goalsApi.delete(id);
       setGoals(goals.filter(goal => goal.id !== id));
+      showSuccess("Goal deleted successfully!");
     } catch (error) {
       console.error("Failed to delete goal:", error);
+      showError("Failed to delete goal. Please try again.");
     }
   };
 
@@ -1277,6 +1288,13 @@ export default function LifeGoalsBoard() {
           </div>
         </div>
       )}
+
+      {/* Alert Container */}
+      <AlertContainer 
+        alerts={alerts} 
+        onRemoveAlert={removeAlert} 
+        position="top-right" 
+      />
     </div>
   );
 } 

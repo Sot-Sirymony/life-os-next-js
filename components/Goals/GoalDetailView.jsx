@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import useAlert from '../../hooks/useAlert';
+import AlertContainer from '../common/AlertContainer';
 
 export default function GoalDetailView({ goal, onClose, onEdit, onDelete, onUpdateProgress }) {
   const [tasks, setTasks] = useState([]);
@@ -40,6 +42,9 @@ export default function GoalDetailView({ goal, onClose, onEdit, onDelete, onUpda
   // Notes management state
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [editingNoteText, setEditingNoteText] = useState('');
+
+  // Alert functionality
+  const { alerts, showSuccess, showError, removeAlert } = useAlert();
 
   useEffect(() => {
     if (goal) {
@@ -212,9 +217,13 @@ export default function GoalDetailView({ goal, onClose, onEdit, onDelete, onUpda
           notes: ''
         });
         setIsAddingTask(false);
+        showSuccess('Task created successfully!');
+      } else {
+        throw new Error('Failed to create task');
       }
     } catch (error) {
       console.error('Error creating task:', error);
+      showError('Failed to create task. Please try again.');
     }
   };
 
@@ -247,11 +256,14 @@ export default function GoalDetailView({ goal, onClose, onEdit, onDelete, onUpda
         setTasks(tasks.map(task => task.id === taskId ? updatedTask : task));
         setIsEditingTask(false);
         setEditingTask(null);
+        showSuccess('Task updated successfully!');
       } else {
         console.error('Failed to update task:', await response.text());
+        throw new Error('Failed to update task');
       }
     } catch (error) {
       console.error('Error updating task:', error);
+      showError('Failed to update task. Please try again.');
     }
   };
 
@@ -265,9 +277,13 @@ export default function GoalDetailView({ goal, onClose, onEdit, onDelete, onUpda
 
       if (response.ok) {
         setTasks(tasks.filter(task => task.id !== taskId));
+        showSuccess('Task deleted successfully!');
+      } else {
+        throw new Error('Failed to delete task');
       }
     } catch (error) {
       console.error('Error deleting task:', error);
+      showError('Failed to delete task. Please try again.');
     }
   };
 
@@ -393,11 +409,13 @@ export default function GoalDetailView({ goal, onClose, onEdit, onDelete, onUpda
         setIsEditing(false);
         setEditForm(updatedGoal);
         onUpdateProgress(updatedGoal);
+        showSuccess('Goal updated successfully!');
       } else {
         throw new Error('Failed to update goal');
       }
     } catch (error) {
       setError('Failed to update goal');
+      showError('Failed to update goal. Please try again.');
     }
   };
 
@@ -1940,6 +1958,13 @@ export default function GoalDetailView({ goal, onClose, onEdit, onDelete, onUpda
           </div>
         </div>
       )}
+
+      {/* Alert Container */}
+      <AlertContainer 
+        alerts={alerts} 
+        onRemoveAlert={removeAlert} 
+        position="top-right" 
+      />
     </div>
   );
 } 

@@ -42,14 +42,17 @@ export default function PerformanceInsights({ goals = [], tasks = [] }) {
     const worstCategory = categoryPerformance[categoryPerformance.length - 1];
     
     return {
-      productivityScore,
-      goalCompletionRate: Math.round(goalCompletionRate),
-      taskCompletionRate: Math.round(taskCompletionRate),
-      bestCategory,
-      worstCategory,
-      aiOptimizedTasks,
       totalGoals,
-      totalTasks
+      completedGoals,
+      inProgressGoals,
+      goalCompletionRate: Math.round(goalCompletionRate),
+      totalTasks,
+      completedTasks,
+      taskCompletionRate: Math.round(taskCompletionRate),
+      aiOptimizedTasks,
+      productivityScore,
+      bestCategory,
+      worstCategory
     };
   };
 
@@ -68,13 +71,13 @@ export default function PerformanceInsights({ goals = [], tasks = [] }) {
     <div style={{
       background: '#fff',
       borderRadius: '12px',
-      padding: '24px',
+      padding: 'clamp(16px, 4vw, 24px)',
       boxShadow: '0 2px 8px rgba(100,149,237,0.08)',
       marginBottom: '24px'
     }}>
       <h2 style={{ 
         margin: '0 0 20px 0', 
-        fontSize: '24px', 
+        fontSize: 'clamp(18px, 4vw, 24px)', 
         color: '#333',
         fontFamily: "'Poppins', sans-serif",
         fontWeight: 600
@@ -82,55 +85,22 @@ export default function PerformanceInsights({ goals = [], tasks = [] }) {
         Performance Insights
       </h2>
       
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
-        {/* Productivity Score */}
-        <div style={{
-          background: '#f8f9fa',
-          borderRadius: '10px',
-          padding: '20px',
-          textAlign: 'center',
-          border: `2px solid ${productivityLevel.color}`
-        }}>
-          <div style={{ fontSize: '32px', marginBottom: '8px' }}>
-            {productivityLevel.emoji}
-          </div>
-          <div style={{
-            fontSize: '36px',
-            fontWeight: 'bold',
-            color: productivityLevel.color,
-            fontFamily: "'Poppins', sans-serif",
-            marginBottom: '4px'
-          }}>
-            {insights.productivityScore}%
-          </div>
-          <div style={{
-            fontSize: '16px',
-            color: '#333',
-            fontFamily: "'PT Sans', sans-serif",
-            fontWeight: 600
-          }}>
-            {productivityLevel.level}
-          </div>
-          <div style={{
-            fontSize: '14px',
-            color: '#666',
-            fontFamily: "'PT Sans', sans-serif",
-            marginTop: '4px'
-          }}>
-            Productivity Score
-          </div>
-        </div>
-
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+        gap: 'clamp(16px, 3vw, 20px)' 
+      }}>
         {/* Goal Completion Rate */}
         <div style={{
           background: '#f8f9fa',
           borderRadius: '10px',
-          padding: '20px',
-          textAlign: 'center'
+          padding: 'clamp(16px, 3vw, 20px)',
+          textAlign: 'center',
+          border: '2px solid #6495ED'
         }}>
-          <div style={{ fontSize: '32px', marginBottom: '8px' }}>🎯</div>
+          <div style={{ fontSize: 'clamp(24px, 5vw, 32px)', marginBottom: '8px' }}>🎯</div>
           <div style={{
-            fontSize: '36px',
+            fontSize: 'clamp(24px, 6vw, 36px)',
             fontWeight: 'bold',
             color: '#6495ED',
             fontFamily: "'Poppins', sans-serif",
@@ -139,7 +109,7 @@ export default function PerformanceInsights({ goals = [], tasks = [] }) {
             {insights.goalCompletionRate}%
           </div>
           <div style={{
-            fontSize: '16px',
+            fontSize: 'clamp(14px, 3vw, 16px)',
             color: '#333',
             fontFamily: "'PT Sans', sans-serif",
             fontWeight: 600
@@ -147,7 +117,7 @@ export default function PerformanceInsights({ goals = [], tasks = [] }) {
             Goal Completion
           </div>
           <div style={{
-            fontSize: '14px',
+            fontSize: 'clamp(12px, 2.5vw, 14px)',
             color: '#666',
             fontFamily: "'PT Sans', sans-serif",
             marginTop: '4px'
@@ -160,12 +130,12 @@ export default function PerformanceInsights({ goals = [], tasks = [] }) {
         <div style={{
           background: '#f8f9fa',
           borderRadius: '10px',
-          padding: '20px',
+          padding: 'clamp(16px, 3vw, 20px)',
           textAlign: 'center'
         }}>
-          <div style={{ fontSize: '32px', marginBottom: '8px' }}>📋</div>
+          <div style={{ fontSize: 'clamp(24px, 5vw, 32px)', marginBottom: '8px' }}>📋</div>
           <div style={{
-            fontSize: '36px',
+            fontSize: 'clamp(24px, 6vw, 36px)',
             fontWeight: 'bold',
             color: '#4CAF50',
             fontFamily: "'Poppins', sans-serif",
@@ -174,7 +144,7 @@ export default function PerformanceInsights({ goals = [], tasks = [] }) {
             {insights.taskCompletionRate}%
           </div>
           <div style={{
-            fontSize: '16px',
+            fontSize: 'clamp(14px, 3vw, 16px)',
             color: '#333',
             fontFamily: "'PT Sans', sans-serif",
             fontWeight: 600
@@ -182,7 +152,7 @@ export default function PerformanceInsights({ goals = [], tasks = [] }) {
             Task Completion
           </div>
           <div style={{
-            fontSize: '14px',
+            fontSize: 'clamp(12px, 2.5vw, 14px)',
             color: '#666',
             fontFamily: "'PT Sans', sans-serif",
             marginTop: '4px'
@@ -195,12 +165,12 @@ export default function PerformanceInsights({ goals = [], tasks = [] }) {
         <div style={{
           background: '#f8f9fa',
           borderRadius: '10px',
-          padding: '20px',
+          padding: 'clamp(16px, 3vw, 20px)',
           textAlign: 'center'
         }}>
-          <div style={{ fontSize: '32px', marginBottom: '8px' }}>🤖</div>
+          <div style={{ fontSize: 'clamp(24px, 5vw, 32px)', marginBottom: '8px' }}>🤖</div>
           <div style={{
-            fontSize: '36px',
+            fontSize: 'clamp(24px, 6vw, 36px)',
             fontWeight: 'bold',
             color: '#9C27B0',
             fontFamily: "'Poppins', sans-serif",
@@ -209,7 +179,7 @@ export default function PerformanceInsights({ goals = [], tasks = [] }) {
             {insights.aiOptimizedTasks}
           </div>
           <div style={{
-            fontSize: '16px',
+            fontSize: 'clamp(14px, 3vw, 16px)',
             color: '#333',
             fontFamily: "'PT Sans', sans-serif",
             fontWeight: 600
@@ -217,37 +187,76 @@ export default function PerformanceInsights({ goals = [], tasks = [] }) {
             AI-Optimized Tasks
           </div>
           <div style={{
-            fontSize: '14px',
+            fontSize: 'clamp(12px, 2.5vw, 14px)',
             color: '#666',
             fontFamily: "'PT Sans', sans-serif",
             marginTop: '4px'
           }}>
-            {insights.totalTasks > 0 ? Math.round((insights.aiOptimizedTasks / insights.totalTasks) * 100) : 0}% of total
+            Enhanced productivity
+          </div>
+        </div>
+
+        {/* Productivity Score */}
+        <div style={{
+          background: '#f8f9fa',
+          borderRadius: '10px',
+          padding: 'clamp(16px, 3vw, 20px)',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: 'clamp(24px, 5vw, 32px)', marginBottom: '8px' }}>📊</div>
+          <div style={{
+            fontSize: 'clamp(24px, 6vw, 36px)',
+            fontWeight: 'bold',
+            color: '#FF9800',
+            fontFamily: "'Poppins', sans-serif",
+            marginBottom: '4px'
+          }}>
+            {insights.productivityScore}%
+          </div>
+          <div style={{
+            fontSize: 'clamp(14px, 3vw, 16px)',
+            color: '#333',
+            fontFamily: "'PT Sans', sans-serif",
+            fontWeight: 600
+          }}>
+            Productivity Score
+          </div>
+          <div style={{
+            fontSize: 'clamp(12px, 2.5vw, 14px)',
+            color: '#666',
+            fontFamily: "'PT Sans', sans-serif",
+            marginTop: '4px'
+          }}>
+            Overall performance
           </div>
         </div>
       </div>
 
       {/* Category Performance */}
       {insights.bestCategory && insights.worstCategory && (
-        <div style={{ marginTop: '24px' }}>
+        <div style={{ marginTop: 'clamp(16px, 4vw, 24px)' }}>
           <h3 style={{
             margin: '0 0 16px 0',
-            fontSize: '18px',
+            fontSize: 'clamp(16px, 3vw, 18px)',
             color: '#333',
             fontFamily: "'Poppins', sans-serif",
             fontWeight: 600
           }}>
             Category Performance
           </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+            gap: 'clamp(12px, 3vw, 16px)' 
+          }}>
             <div style={{
               background: '#E8F5E8',
               borderRadius: '8px',
-              padding: '16px',
+              padding: 'clamp(12px, 3vw, 16px)',
               border: '2px solid #4CAF50'
             }}>
               <div style={{
-                fontSize: '14px',
+                fontSize: 'clamp(12px, 2.5vw, 14px)',
                 color: '#4CAF50',
                 fontFamily: "'PT Sans', sans-serif",
                 fontWeight: 600,
@@ -256,7 +265,7 @@ export default function PerformanceInsights({ goals = [], tasks = [] }) {
                 🏆 Best Performing
               </div>
               <div style={{
-                fontSize: '16px',
+                fontSize: 'clamp(14px, 3vw, 16px)',
                 color: '#333',
                 fontFamily: "'PT Sans', sans-serif",
                 fontWeight: 600
@@ -264,7 +273,7 @@ export default function PerformanceInsights({ goals = [], tasks = [] }) {
                 {insights.bestCategory.name}
               </div>
               <div style={{
-                fontSize: '14px',
+                fontSize: 'clamp(12px, 2.5vw, 14px)',
                 color: '#666',
                 fontFamily: "'PT Sans', sans-serif"
               }}>
@@ -275,20 +284,20 @@ export default function PerformanceInsights({ goals = [], tasks = [] }) {
             <div style={{
               background: '#FFF3E0',
               borderRadius: '8px',
-              padding: '16px',
+              padding: 'clamp(12px, 3vw, 16px)',
               border: '2px solid #FF9800'
             }}>
               <div style={{
-                fontSize: '14px',
+                fontSize: 'clamp(12px, 2.5vw, 14px)',
                 color: '#FF9800',
                 fontFamily: "'PT Sans', sans-serif",
                 fontWeight: 600,
                 marginBottom: '4px'
               }}>
-                📈 Needs Focus
+                📈 Needs Improvement
               </div>
               <div style={{
-                fontSize: '16px',
+                fontSize: 'clamp(14px, 3vw, 16px)',
                 color: '#333',
                 fontFamily: "'PT Sans', sans-serif",
                 fontWeight: 600
@@ -296,7 +305,7 @@ export default function PerformanceInsights({ goals = [], tasks = [] }) {
                 {insights.worstCategory.name}
               </div>
               <div style={{
-                fontSize: '14px',
+                fontSize: 'clamp(12px, 2.5vw, 14px)',
                 color: '#666',
                 fontFamily: "'PT Sans', sans-serif"
               }}>

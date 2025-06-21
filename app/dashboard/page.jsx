@@ -1,6 +1,6 @@
 'use client';
 
-import Sidebar from '../../components/Sidebar';
+import ResponsiveLayout from '../../components/ResponsiveLayout';
 import LifeGoalsBoard from '../../components/Goals/LifeGoalsBoard';
 import WeeklyPlanner from '../../components/Planner/WeeklyPlanner';
 import AITaskFilter from '../../components/Progress/AITaskFilter';
@@ -17,17 +17,18 @@ function DashboardWidget({ title, value, icon, color = '#6495ED' }) {
     <div style={{
       background: '#fff',
       borderRadius: '12px',
-      padding: '20px',
+      padding: 'clamp(16px, 4vw, 20px)',
       boxShadow: '0 2px 8px rgba(100,149,237,0.08)',
       border: `2px solid ${color}`,
-      minWidth: '180px',
-      flex: '1 1 200px'
+      minWidth: '140px',
+      flex: '1 1 160px',
+      maxWidth: '100%'
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-        <span style={{ fontSize: '24px' }}>{icon}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 'clamp(18px, 4vw, 24px)' }}>{icon}</span>
         <h3 style={{ 
           margin: 0, 
-          fontSize: '16px', 
+          fontSize: 'clamp(12px, 3vw, 16px)', 
           color: '#333',
           fontFamily: "'Poppins', sans-serif",
           fontWeight: 600
@@ -36,7 +37,7 @@ function DashboardWidget({ title, value, icon, color = '#6495ED' }) {
         </h3>
       </div>
       <div style={{ 
-        fontSize: '32px', 
+        fontSize: 'clamp(20px, 5vw, 32px)', 
         fontWeight: 'bold', 
         color: color,
         fontFamily: "'Poppins', sans-serif"
@@ -60,13 +61,13 @@ function ProgressSummary({ goals, tasks }) {
     <div style={{
       background: '#fff',
       borderRadius: '12px',
-      padding: '24px',
+      padding: 'clamp(16px, 4vw, 24px)',
       boxShadow: '0 2px 8px rgba(100,149,237,0.08)',
       marginBottom: '24px'
     }}>
       <h2 style={{ 
         margin: '0 0 20px 0', 
-        fontSize: '24px', 
+        fontSize: 'clamp(18px, 4vw, 24px)', 
         color: '#333',
         fontFamily: "'Poppins', sans-serif",
         fontWeight: 600
@@ -74,9 +75,9 @@ function ProgressSummary({ goals, tasks }) {
         Progress Summary
       </h2>
       <div style={{ 
-        display: 'flex', 
-        gap: '16px', 
-        flexWrap: 'wrap',
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+        gap: 'clamp(12px, 3vw, 16px)',
         justifyContent: 'center'
       }}>
         <DashboardWidget 
@@ -122,69 +123,59 @@ function ProgressSummary({ goals, tasks }) {
 
 // Goal Categories Widget
 function GoalCategoriesWidget({ goals }) {
-  const categoryGroups = {
-    Foundations: [
-      'Self-Development & Learning', 'Health & Wellness', 
-      'Financial Security', 'Personal Growth'
-    ],
-    'People & Impact': [
-      'Relationships', 'Community Involvement', 
-      'Social Connection', 'Family'
-    ],
-    'Achievement & Enjoyment': [
-      'Career & Professional Growth', 'Hobbies & Recreation', 
-      'Travel & Adventure', 'Creative Expression'
-    ]
-  };
-
-  const getCategoryStats = () => {
-    const stats = {};
-    Object.keys(categoryGroups).forEach(group => {
-      stats[group] = {
-        total: 0,
-        completed: 0,
-        categories: {}
-      };
-      categoryGroups[group].forEach(categoryName => {
-        const categoryGoals = goals.filter(g => g.category && g.category.name === categoryName);
-        stats[group].total += categoryGoals.length;
-        stats[group].completed += categoryGoals.filter(g => g.status === 'Done').length;
-        stats[group].categories[categoryName] = categoryGoals.length;
-      });
-    });
-    return stats;
-  };
-
-  const categoryStats = getCategoryStats();
+  const categoryStats = goals.reduce((acc, goal) => {
+    const group = goal.group || 'Personal';
+    const category = goal.category?.name || 'General';
+    
+    if (!acc[group]) {
+      acc[group] = { total: 0, completed: 0, categories: {} };
+    }
+    
+    acc[group].total++;
+    if (goal.status === 'Done') {
+      acc[group].completed++;
+    }
+    
+    if (!acc[group].categories[category]) {
+      acc[group].categories[category] = 0;
+    }
+    acc[group].categories[category]++;
+    
+    return acc;
+  }, {});
 
   return (
     <div style={{
       background: '#fff',
       borderRadius: '12px',
-      padding: '24px',
+      padding: 'clamp(16px, 4vw, 24px)',
       boxShadow: '0 2px 8px rgba(100,149,237,0.08)',
       marginBottom: '24px'
     }}>
       <h2 style={{ 
         margin: '0 0 20px 0', 
-        fontSize: '24px', 
+        fontSize: 'clamp(18px, 4vw, 24px)', 
         color: '#333',
         fontFamily: "'Poppins', sans-serif",
         fontWeight: 600
       }}>
         Goal Categories
       </h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+        gap: 'clamp(16px, 3vw, 20px)' 
+      }}>
         {Object.entries(categoryStats).map(([group, stats]) => (
           <div key={group} style={{
             background: '#f8f9fa',
             borderRadius: '8px',
-            padding: '16px',
+            padding: 'clamp(12px, 3vw, 16px)',
             border: '2px solid #E6F0FF'
           }}>
             <h3 style={{
               margin: '0 0 12px 0',
-              fontSize: '18px',
+              fontSize: 'clamp(14px, 3vw, 18px)',
               color: '#6495ED',
               fontFamily: "'Poppins', sans-serif",
               fontWeight: 600
@@ -192,7 +183,7 @@ function GoalCategoriesWidget({ goals }) {
               {group}
             </h3>
             <div style={{ marginBottom: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: '#666' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'clamp(12px, 2.5vw, 14px)', color: '#666', flexWrap: 'wrap', gap: '4px' }}>
                 <span>Total: {stats.total}</span>
                 <span>Completed: {stats.completed}</span>
               </div>
@@ -212,11 +203,11 @@ function GoalCategoriesWidget({ goals }) {
                 }} />
               </div>
             </div>
-            <div style={{ fontSize: '12px', color: '#999' }}>
-              {Object.entries(stats.categories).map(([category, count]) => (
-                <div key={category} style={{ marginBottom: '4px' }}>
-                  {category}: {count}
-                </div>
+            <div style={{ fontSize: 'clamp(11px, 2.5vw, 12px)', color: '#999' }}>
+              {Object.entries(stats.categories).map(([cat, count]) => (
+                <span key={cat} style={{ marginRight: '8px' }}>
+                  {cat}: {count}
+                </span>
               ))}
             </div>
           </div>
@@ -229,63 +220,66 @@ function GoalCategoriesWidget({ goals }) {
 // Quick Access Widget
 function QuickAccessWidget({ onNavigate }) {
   const quickActions = [
-    { name: 'Add Goal', icon: '🎯', path: '/goals', color: '#6495ED' },
-    { name: 'Create Task', icon: '📝', path: '/tasks', color: '#4CAF50' },
-    { name: 'View Progress', icon: '📊', path: '/progress', color: '#FF9800' },
-    { name: 'Weekly Plan', icon: '📅', path: '/planner', color: '#9C27B0' }
+    { label: 'Add Goal', icon: '🎯', action: () => onNavigate('/goals'), color: '#6495ED' },
+    { label: 'Create Task', icon: '✅', action: () => onNavigate('/tasks'), color: '#4CAF50' },
+    { label: 'Weekly Plan', icon: '📅', action: () => onNavigate('/planner'), color: '#FF9800' },
+    { label: 'View Progress', icon: '📈', action: () => onNavigate('/progress'), color: '#9C27B0' }
   ];
 
   return (
     <div style={{
       background: '#fff',
       borderRadius: '12px',
-      padding: '24px',
+      padding: 'clamp(16px, 4vw, 24px)',
       boxShadow: '0 2px 8px rgba(100,149,237,0.08)',
       marginBottom: '24px'
     }}>
       <h2 style={{ 
         margin: '0 0 20px 0', 
-        fontSize: '24px', 
+        fontSize: 'clamp(18px, 4vw, 24px)', 
         color: '#333',
         fontFamily: "'Poppins', sans-serif",
         fontWeight: 600
       }}>
-        Quick Access
+        Quick Actions
       </h2>
       <div style={{ 
         display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-        gap: '16px' 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: 'clamp(12px, 3vw, 16px)'
       }}>
-        {quickActions.map((action) => (
+        {quickActions.map((action, index) => (
           <button
-            key={action.name}
-            onClick={() => onNavigate(action.path)}
+            key={index}
+            onClick={action.action}
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '12px',
-              padding: '16px',
+              gap: 'clamp(8px, 2vw, 12px)',
+              padding: 'clamp(12px, 3vw, 16px)',
               background: '#f8f9fa',
               border: `2px solid ${action.color}`,
               borderRadius: '12px',
               cursor: 'pointer',
               transition: 'all 0.3s ease',
               fontFamily: "'PT Sans', sans-serif",
-              fontSize: '16px',
+              fontSize: 'clamp(14px, 3vw, 16px)',
+              fontWeight: 500,
               color: '#333'
             }}
-            onMouseEnter={(e) => {
+            onMouseOver={(e) => {
               e.target.style.background = action.color;
               e.target.style.color = '#fff';
+              e.target.style.transform = 'translateY(-2px)';
             }}
-            onMouseLeave={(e) => {
+            onMouseOut={(e) => {
               e.target.style.background = '#f8f9fa';
               e.target.style.color = '#333';
+              e.target.style.transform = 'translateY(0)';
             }}
           >
-            <span style={{ fontSize: '24px' }}>{action.icon}</span>
-            <span>{action.name}</span>
+            <span style={{ fontSize: 'clamp(18px, 4vw, 24px)' }}>{action.icon}</span>
+            <span>{action.label}</span>
           </button>
         ))}
       </div>
@@ -295,51 +289,52 @@ function QuickAccessWidget({ onNavigate }) {
 
 // AI Tools Section
 function AIToolsSection() {
-  const handleTimeEstimate = (time) => {
-    console.log('AI estimated time:', time);
-  };
-
   return (
     <div style={{
       background: '#fff',
       borderRadius: '12px',
-      padding: '24px',
+      padding: 'clamp(16px, 4vw, 24px)',
       boxShadow: '0 2px 8px rgba(100,149,237,0.08)',
       marginBottom: '24px'
     }}>
       <h2 style={{ 
         margin: '0 0 20px 0', 
-        fontSize: '24px', 
+        fontSize: 'clamp(18px, 4vw, 24px)', 
         color: '#333',
         fontFamily: "'Poppins', sans-serif",
         fontWeight: 600
       }}>
         AI-Powered Tools
       </h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+        gap: 'clamp(16px, 3vw, 20px)'
+      }}>
         <AITaskFilter />
-        <AITimeEstimator onEstimate={handleTimeEstimate} />
+        <AITimeEstimator />
       </div>
     </div>
   );
 }
 
-// Top Navigation
+// Top Navigation Component
 function TopNavigation({ activeSection, onSectionChange }) {
   const sections = [
-    { id: 'overview', name: 'Overview', icon: '📊' },
-    { id: 'goals', name: 'Goals', icon: '🎯' },
-    { id: 'tasks', name: 'Tasks', icon: '📝' },
-    { id: 'progress', name: 'Progress', icon: '📈' },
-    { id: 'ai-tools', name: 'AI Tools', icon: '🤖' }
+    { id: 'overview', label: 'Overview', icon: '📊' },
+    { id: 'goals', label: 'Goals', icon: '🎯' },
+    { id: 'tasks', label: 'Tasks', icon: '✅' },
+    { id: 'progress', label: 'Progress', icon: '📈' },
+    { id: 'ai-tools', label: 'AI Tools', icon: '🤖' }
   ];
 
   return (
     <div style={{
       display: 'flex',
-      gap: '8px',
-      marginBottom: '24px',
-      flexWrap: 'wrap'
+      gap: 'clamp(4px, 1vw, 8px)',
+      marginBottom: 'clamp(16px, 4vw, 24px)',
+      overflowX: 'auto',
+      paddingBottom: '8px'
     }}>
       {sections.map((section) => (
         <button
@@ -348,317 +343,174 @@ function TopNavigation({ activeSection, onSectionChange }) {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
-            padding: '12px 20px',
-            background: activeSection === section.id ? '#6495ED' : '#f8f9fa',
+            gap: 'clamp(4px, 1vw, 8px)',
+            padding: 'clamp(8px, 2vw, 12px) clamp(12px, 3vw, 16px)',
+            background: activeSection === section.id ? '#6495ED' : 'transparent',
             color: activeSection === section.id ? '#fff' : '#333',
-            border: 'none',
-            borderRadius: '8px',
+            border: `2px solid ${activeSection === section.id ? '#6495ED' : '#E6F0FF'}`,
+            borderRadius: '12px',
             cursor: 'pointer',
             transition: 'all 0.3s ease',
             fontFamily: "'PT Sans', sans-serif",
-            fontSize: '14px',
-            fontWeight: activeSection === section.id ? '600' : '400'
+            fontSize: 'clamp(12px, 2.5vw, 14px)',
+            fontWeight: activeSection === section.id ? 600 : 400,
+            whiteSpace: 'nowrap',
+            minWidth: 'fit-content'
           }}
         >
-          <span>{section.icon}</span>
-          <span>{section.name}</span>
+          <span style={{ fontSize: 'clamp(14px, 3vw, 16px)' }}>{section.icon}</span>
+          <span>{section.label}</span>
         </button>
       ))}
     </div>
   );
 }
 
-// Task Management Component for Dashboard
+// Task Management Component
 function TaskManagement({ tasks, goals, categories }) {
-  const [filter, setFilter] = useState('all'); // all, completed, in-progress, not-started
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState('dueDate'); // dueDate, priority, status, title
-
-  const filteredTasks = tasks.filter(task => {
-    const matchesFilter = filter === 'all' || 
-      (filter === 'completed' && task.status === 'Done') ||
-      (filter === 'in-progress' && task.status === 'In Progress') ||
-      (filter === 'not-started' && task.status === 'Not Started');
-    
-    const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    return matchesFilter && matchesSearch;
-  });
-
-  const sortedTasks = [...filteredTasks].sort((a, b) => {
-    switch (sortBy) {
-      case 'dueDate':
-        if (!a.dueDate && !b.dueDate) return 0;
-        if (!a.dueDate) return 1;
-        if (!b.dueDate) return -1;
-        return new Date(a.dueDate) - new Date(b.dueDate);
-      case 'priority':
-        const priorityOrder = { 'High': 3, 'Medium': 2, 'Low': 1 };
-        return (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
-      case 'status':
-        const statusOrder = { 'Not Started': 1, 'In Progress': 2, 'Done': 3 };
-        return statusOrder[a.status] - statusOrder[b.status];
-      case 'title':
-        return a.title.localeCompare(b.title);
-      default:
-        return 0;
-    }
-  });
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
       case 'Done': return '#4CAF50';
       case 'In Progress': return '#FF9800';
-      case 'Not Started': return '#F44336';
+      case 'Pending': return '#6495ED';
       default: return '#666';
     }
   };
 
   const getPriorityColor = (priority) => {
     switch (priority) {
-      case 'High': return '#F44336';
-      case 'Medium': return '#FF9800';
-      case 'Low': return '#4CAF50';
+      case 'high': return '#F44336';
+      case 'medium': return '#FF9800';
+      case 'low': return '#4CAF50';
       default: return '#666';
     }
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'No due date';
-    return new Date(dateString).toLocaleDateString();
   };
 
   return (
     <div style={{
       background: '#fff',
       borderRadius: '12px',
-      padding: '24px',
+      padding: 'clamp(16px, 4vw, 24px)',
       boxShadow: '0 2px 8px rgba(100,149,237,0.08)',
       marginBottom: '24px'
     }}>
       <h2 style={{ 
         margin: '0 0 20px 0', 
-        fontSize: '24px', 
+        fontSize: 'clamp(18px, 4vw, 24px)', 
         color: '#333',
         fontFamily: "'Poppins', sans-serif",
         fontWeight: 600
       }}>
         Task Management
       </h2>
-
-      {/* Quick Access Button */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'flex-end', 
-        marginBottom: '20px' 
-      }}>
-        <button
-          onClick={() => window.location.href = '/tasks'}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '10px 16px',
-            background: '#6495ED',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontFamily: "'PT Sans', sans-serif",
-            fontWeight: '600',
-            transition: 'all 0.3s ease'
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.background = '#5a7fd8';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.background = '#6495ED';
-          }}
-        >
-          <span>📝</span>
-          <span>Full Task Management</span>
-        </button>
-      </div>
-
-      {/* Filters and Search */}
-      <div style={{ 
-        display: 'flex', 
-        gap: '16px', 
-        marginBottom: '20px',
-        flexWrap: 'wrap',
-        alignItems: 'center'
-      }}>
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          style={{
-            padding: '8px 12px',
-            border: '2px solid #E6F0FF',
-            borderRadius: '6px',
-            fontFamily: "'PT Sans', sans-serif",
-            fontSize: '14px'
-          }}
-        >
-          <option value="all">All Tasks</option>
-          <option value="completed">Completed</option>
-          <option value="in-progress">In Progress</option>
-          <option value="not-started">Not Started</option>
-        </select>
-
-        <select
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-          style={{
-            padding: '8px 12px',
-            border: '2px solid #E6F0FF',
-            borderRadius: '6px',
-            fontFamily: "'PT Sans', sans-serif",
-            fontSize: '14px'
-          }}
-        >
-          <option value="dueDate">Sort by Due Date</option>
-          <option value="priority">Sort by Priority</option>
-          <option value="status">Sort by Status</option>
-          <option value="title">Sort by Title</option>
-        </select>
-
-        <input
-          type="text"
-          placeholder="Search tasks..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{
-            padding: '8px 12px',
-            border: '2px solid #E6F0FF',
-            borderRadius: '6px',
-            fontFamily: "'PT Sans', sans-serif",
-            fontSize: '14px',
-            minWidth: '200px'
-          }}
-        />
-      </div>
-
-      {/* Task Stats */}
-      <div style={{ 
-        display: 'flex', 
-        gap: '16px', 
-        marginBottom: '20px',
-        flexWrap: 'wrap'
-      }}>
-        <DashboardWidget 
-          title="Total Tasks" 
-          value={tasks.length} 
-          icon="📝" 
-          color="#6495ED"
-        />
-        <DashboardWidget 
-          title="Completed" 
-          value={tasks.filter(t => t.status === 'Done').length} 
-          icon="✅" 
-          color="#4CAF50"
-        />
-        <DashboardWidget 
-          title="In Progress" 
-          value={tasks.filter(t => t.status === 'In Progress').length} 
-          icon="🔄" 
-          color="#FF9800"
-        />
-        <DashboardWidget 
-          title="Not Started" 
-          value={tasks.filter(t => t.status === 'Not Started').length} 
-          icon="⏳" 
-          color="#F44336"
-        />
-      </div>
-
-      {/* Task List */}
-      <div style={{ maxHeight: '600px', overflowY: 'auto' }}>
-        {sortedTasks.length === 0 ? (
-          <div style={{ 
-            textAlign: 'center', 
-            padding: '40px',
-            color: '#666',
-            fontFamily: "'PT Sans', sans-serif"
-          }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>📝</div>
-            <p>No tasks found matching your criteria.</p>
-          </div>
-        ) : (
-          <div style={{ display: 'grid', gap: '12px' }}>
-            {sortedTasks.map((task) => (
-              <div key={task.id} style={{
-                background: '#f8f9fa',
-                borderRadius: '8px',
-                padding: '16px',
-                border: '2px solid #E6F0FF',
-                transition: 'all 0.3s ease'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                  <h3 style={{
-                    margin: 0,
-                    fontSize: '16px',
-                    color: '#333',
-                    fontFamily: "'Poppins', sans-serif",
-                    fontWeight: 600
-                  }}>
-                    {task.title}
-                  </h3>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <span style={{
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                      fontWeight: 'bold',
-                      color: '#fff',
-                      background: getStatusColor(task.status),
-                      fontFamily: "'PT Sans', sans-serif"
-                    }}>
-                      {task.status}
-                    </span>
-                    <span style={{
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                      fontWeight: 'bold',
-                      color: '#fff',
-                      background: getPriorityColor(task.priority),
-                      fontFamily: "'PT Sans', sans-serif"
-                    }}>
-                      {task.priority}
-                    </span>
-                  </div>
-                </div>
-                
-                {task.description && (
-                  <p style={{
-                    margin: '0 0 8px 0',
-                    color: '#666',
-                    fontSize: '14px',
+      
+      {tasks.length === 0 ? (
+        <div style={{
+          textAlign: 'center',
+          padding: 'clamp(32px, 8vw, 48px) clamp(16px, 4vw, 24px)',
+          color: '#666'
+        }}>
+          <div style={{ fontSize: 'clamp(48px, 12vw, 64px)', marginBottom: '16px' }}>📋</div>
+          <p style={{ margin: '0 0 8px 0', fontSize: 'clamp(16px, 4vw, 18px)' }}>No tasks yet</p>
+          <p style={{ margin: 0, fontSize: 'clamp(14px, 3vw, 16px)' }}>
+            Create your first task to get started
+          </p>
+        </div>
+      ) : (
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gap: 'clamp(16px, 3vw, 20px)'
+        }}>
+          {tasks.slice(0, 6).map((task) => (
+            <div key={task.id} style={{
+              background: '#f8f9fa',
+              borderRadius: '8px',
+              padding: 'clamp(12px, 3vw, 16px)',
+              border: '2px solid #E6F0FF',
+              transition: 'all 0.3s ease'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+                <h3 style={{
+                  margin: 0,
+                  fontSize: 'clamp(14px, 3vw, 16px)',
+                  color: '#333',
+                  fontFamily: "'Poppins', sans-serif",
+                  fontWeight: 600,
+                  flex: 1
+                }}>
+                  {task.title}
+                </h3>
+                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                  <span style={{
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    fontSize: 'clamp(10px, 2.5vw, 12px)',
+                    background: getStatusColor(task.status),
+                    color: '#fff',
                     fontFamily: "'PT Sans', sans-serif"
                   }}>
-                    {task.description}
-                  </p>
-                )}
-
-                <div style={{ 
-                  display: 'flex', 
-                  gap: '16px', 
-                  fontSize: '12px', 
-                  color: '#999',
-                  fontFamily: "'PT Sans', sans-serif"
-                }}>
-                  <span>📅 Due: {formatDate(task.dueDate)}</span>
-                  {task.timeSpent && <span>⏱️ Time: {task.timeSpent}h</span>}
-                  {task.goal && <span>🎯 Goal: {task.goal.title}</span>}
+                    {task.status}
+                  </span>
+                  <span style={{
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    fontSize: 'clamp(10px, 2.5vw, 12px)',
+                    background: getPriorityColor(task.priority),
+                    color: '#fff',
+                    fontFamily: "'PT Sans', sans-serif"
+                  }}>
+                    {task.priority}
+                  </span>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+              
+              {task.description && (
+                <p style={{
+                  margin: '0 0 8px 0',
+                  fontSize: 'clamp(12px, 2.5vw, 14px)',
+                  color: '#666',
+                  fontFamily: "'PT Sans', sans-serif",
+                  lineHeight: 1.4
+                }}>
+                  {task.description.length > 100 
+                    ? `${task.description.substring(0, 100)}...` 
+                    : task.description
+                  }
+                </p>
+              )}
+              
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                fontSize: 'clamp(11px, 2.5vw, 12px)',
+                color: '#999',
+                fontFamily: "'PT Sans', sans-serif",
+                flexWrap: 'wrap',
+                gap: '8px'
+              }}>
+                <span>Created: {formatDate(task.createdAt)}</span>
+                {task.timeEstimate && (
+                  <span>⏱️ {task.timeEstimate}min</span>
+                )}
+                {task.aiIntegration && (
+                  <span style={{ color: '#9C27B0' }}>🤖 AI Optimized</span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -711,72 +563,23 @@ export default function Dashboard() {
   };
 
   // Generate real activity data from goals and tasks
-  const generateActivityData = () => {
-    const activities = [];
-    
-    // Add goal activities
-    goals.forEach(goal => {
-      // Goal creation
-      activities.push({
-        type: 'goal_created',
-        description: `Created goal: "${goal.title}"`,
-        timestamp: goal.createdAt
-      });
-      
-      // Goal completion
-      if (goal.status === 'Done' && goal.completionDate) {
-        activities.push({
-          type: 'goal_completed',
-          description: `Completed goal: "${goal.title}"`,
-          timestamp: goal.completionDate
-        });
-      }
-      
-      // Goal updates (if updated recently)
-      if (goal.updatedAt && goal.updatedAt !== goal.createdAt) {
-        activities.push({
-          type: 'goal_updated',
-          description: `Updated goal: "${goal.title}"`,
-          timestamp: goal.updatedAt
-        });
-      }
-    });
-    
-    // Add task activities
-    tasks.forEach(task => {
-      // Task creation
-      activities.push({
-        type: 'task_created',
-        description: `Created task: "${task.title}"`,
-        timestamp: task.createdAt
-      });
-      
-      // Task completion
-      if (task.status === 'Done') {
-        activities.push({
-          type: 'task_completed',
-          description: `Completed task: "${task.title}"`,
-          timestamp: task.updatedAt
-        });
-      }
-      
-      // Task updates (if updated recently)
-      if (task.updatedAt && task.updatedAt !== task.createdAt) {
-        activities.push({
-          type: 'task_updated',
-          description: `Updated task: "${task.title}"`,
-          timestamp: task.updatedAt
-        });
-      }
-    });
-    
-    // Sort by timestamp (most recent first)
-    return activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  };
+  const activityData = [
+    ...goals.map(goal => ({
+      id: `goal-${goal.id}`,
+      type: 'goal',
+      description: `Goal "${goal.title}" ${goal.status === 'Done' ? 'completed' : 'updated'}`,
+      timestamp: goal.updatedAt || goal.createdAt,
+      icon: goal.status === 'Done' ? '🎯' : '📝'
+    })),
+    ...tasks.map(task => ({
+      id: `task-${task.id}`,
+      type: 'task',
+      description: `Task "${task.title}" ${task.status === 'Done' ? 'completed' : 'updated'}`,
+      timestamp: task.updatedAt || task.createdAt,
+      icon: task.status === 'Done' ? '✅' : '📋'
+    }))
+  ].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-  const activityData = generateActivityData();
-
-  // Debug logging for Progress tab
   console.log('Dashboard Progress Debug:', {
     totalGoals: goals.length,
     totalTasks: tasks.length,
@@ -823,90 +626,76 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        background: '#E6F0FF'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
-          <div style={{ fontSize: '24px', color: '#6495ED', marginBottom: '8px' }}>Loading Dashboard...</div>
-          <div style={{ fontSize: '14px', color: '#666' }}>Fetching your goals and tasks</div>
+      <ResponsiveLayout 
+        title="Dashboard" 
+        description="Welcome back! Here's your life management overview and quick access to all features."
+      >
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: '50vh',
+          background: '#fff',
+          borderRadius: '12px',
+          boxShadow: '0 2px 8px rgba(100,149,237,0.08)'
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 'clamp(32px, 8vw, 48px)', marginBottom: '16px' }}>⏳</div>
+            <div style={{ fontSize: 'clamp(18px, 4vw, 24px)', color: '#6495ED', marginBottom: '8px' }}>Loading Dashboard...</div>
+            <div style={{ fontSize: 'clamp(12px, 2.5vw, 14px)', color: '#666' }}>Fetching your goals and tasks</div>
+          </div>
         </div>
-      </div>
+      </ResponsiveLayout>
     );
   }
 
   if (error) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        background: '#E6F0FF'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
-          <div style={{ fontSize: '24px', color: '#F44336', marginBottom: '8px' }}>Error Loading Dashboard</div>
-          <div style={{ fontSize: '14px', color: '#666', marginBottom: '16px' }}>{error}</div>
-          <button 
-            onClick={() => window.location.reload()}
-            style={{
-              padding: '12px 24px',
-              background: '#6495ED',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '16px',
-              fontFamily: "'PT Sans', sans-serif"
-            }}
-          >
-            Refresh Page
-          </button>
+      <ResponsiveLayout 
+        title="Dashboard" 
+        description="Welcome back! Here's your life management overview and quick access to all features."
+      >
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          minHeight: '50vh',
+          background: '#fff',
+          borderRadius: '12px',
+          boxShadow: '0 2px 8px rgba(100,149,237,0.08)'
+        }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 'clamp(32px, 8vw, 48px)', marginBottom: '16px' }}>⚠️</div>
+            <div style={{ fontSize: 'clamp(18px, 4vw, 24px)', color: '#F44336', marginBottom: '8px' }}>Error Loading Dashboard</div>
+            <div style={{ fontSize: 'clamp(12px, 2.5vw, 14px)', color: '#666', marginBottom: '16px' }}>{error}</div>
+            <button 
+              onClick={() => window.location.reload()}
+              style={{
+                padding: 'clamp(8px, 2vw, 12px) clamp(16px, 4vw, 24px)',
+                background: '#6495ED',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: 'clamp(14px, 3vw, 16px)',
+                fontFamily: "'PT Sans', sans-serif"
+              }}
+            >
+              Refresh Page
+            </button>
+          </div>
         </div>
-      </div>
+      </ResponsiveLayout>
     );
   }
 
   return (
-    <div style={{ 
-      display: 'flex',
-      background: '#E6F0FF',
-      minHeight: '100vh',
-      fontFamily: "'PT Sans', sans-serif"
-    }}>
-      <Sidebar />
-      <main style={{ 
-        flex: 1, 
-        padding: '24px',
-        overflowY: 'auto'
-      }}>
-        <div style={{ marginBottom: '24px' }}>
-          <h1 style={{ 
-            margin: '0 0 8px 0',
-            fontSize: '32px',
-            color: '#333',
-            fontFamily: "'Poppins', sans-serif",
-            fontWeight: 600
-          }}>
-            Dashboard
-          </h1>
-          <p style={{ 
-            margin: 0,
-            color: '#666',
-            fontSize: '16px'
-          }}>
-            Welcome back! Here's your life management overview and quick access to all features.
-          </p>
-        </div>
-        
-        <TopNavigation activeSection={activeSection} onSectionChange={setActiveSection} />
-        {renderActiveSection()}
-      </main>
-    </div>
+    <ResponsiveLayout 
+      title="Dashboard" 
+      description="Welcome back! Here's your life management overview and quick access to all features."
+    >
+      <TopNavigation activeSection={activeSection} onSectionChange={setActiveSection} />
+      {renderActiveSection()}
+    </ResponsiveLayout>
   );
 } 

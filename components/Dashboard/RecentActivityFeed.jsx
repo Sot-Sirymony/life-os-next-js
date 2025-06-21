@@ -42,13 +42,13 @@ export default function RecentActivityFeed({ activities = [] }) {
     <div style={{
       background: '#fff',
       borderRadius: '12px',
-      padding: '24px',
+      padding: 'clamp(16px, 4vw, 24px)',
       boxShadow: '0 2px 8px rgba(100,149,237,0.08)',
-      marginBottom: '24px'
+      marginBottom: 'clamp(16px, 4vw, 24px)'
     }}>
       <h2 style={{ 
-        margin: '0 0 20px 0', 
-        fontSize: '24px', 
+        margin: '0 0 clamp(16px, 4vw, 20px) 0', 
+        fontSize: 'clamp(18px, 4vw, 24px)', 
         color: '#333',
         fontFamily: "'Poppins', sans-serif",
         fontWeight: 600
@@ -59,48 +59,67 @@ export default function RecentActivityFeed({ activities = [] }) {
       {activities.length === 0 ? (
         <div style={{
           textAlign: 'center',
-          padding: '40px 20px',
+          padding: 'clamp(32px, 8vw, 40px) clamp(16px, 4vw, 20px)',
           color: '#666',
           fontFamily: "'PT Sans', sans-serif"
         }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>📝</div>
-          <p style={{ margin: 0 }}>No recent activity</p>
-          <p style={{ margin: '8px 0 0 0', fontSize: '14px' }}>
+          <div style={{ fontSize: 'clamp(32px, 8vw, 48px)', marginBottom: '16px' }}>📝</div>
+          <p style={{ margin: '0 0 8px 0', fontSize: 'clamp(14px, 3vw, 16px)' }}>No recent activity</p>
+          <p style={{ margin: 0, fontSize: 'clamp(12px, 2.5vw, 14px)' }}>
             Start creating goals and tasks to see your activity here
           </p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: 'clamp(8px, 2vw, 12px)' 
+        }}>
           {activities.slice(0, 10).map((activity, index) => (
             <div
               key={index}
               style={{
                 display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '12px',
+                alignItems: 'flex-start',
+                gap: 'clamp(8px, 2vw, 12px)',
+                padding: 'clamp(10px, 2.5vw, 12px)',
                 borderRadius: '8px',
                 background: '#f8f9fa',
-                borderLeft: `4px solid ${getActivityColor(activity.type)}`
+                borderLeft: `4px solid ${getActivityColor(activity.type)}`,
+                transition: 'all 0.3s ease'
+              }}
+              onMouseOver={(e) => {
+                e.target.style.background = '#E6F0FF';
+                e.target.style.transform = 'translateX(4px)';
+              }}
+              onMouseOut={(e) => {
+                e.target.style.background = '#f8f9fa';
+                e.target.style.transform = 'translateX(0)';
               }}
             >
-              <span style={{ fontSize: '20px' }}>
+              <span style={{ 
+                fontSize: 'clamp(16px, 3vw, 20px)',
+                flexShrink: 0,
+                marginTop: '2px'
+              }}>
                 {getActivityIcon(activity.type)}
               </span>
-              <div style={{ flex: 1 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{
                   fontFamily: "'PT Sans', sans-serif",
-                  fontSize: '14px',
+                  fontSize: 'clamp(12px, 2.5vw, 14px)',
                   color: '#333',
-                  fontWeight: 500
+                  fontWeight: 500,
+                  lineHeight: 1.4,
+                  wordBreak: 'break-word'
                 }}>
                   {activity.description}
                 </div>
                 <div style={{
                   fontFamily: "'PT Sans', sans-serif",
-                  fontSize: '12px',
+                  fontSize: 'clamp(10px, 2.5vw, 12px)',
                   color: '#666',
-                  marginTop: '2px'
+                  marginTop: '4px'
                 }}>
                   {formatTimeAgo(activity.timestamp)}
                 </div>

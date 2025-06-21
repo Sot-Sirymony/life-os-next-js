@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import useAlert from '../../hooks/useAlert';
+import AlertContainer from '../common/AlertContainer';
 
 export default function GoalManagement({ goals, onGoalsChange }) {
   const [editingGoal, setEditingGoal] = useState(null);
@@ -15,6 +17,9 @@ export default function GoalManagement({ goals, onGoalsChange }) {
   const [filterCategory, setFilterCategory] = useState('all');
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState('desc');
+
+  // Alert functionality
+  const { alerts, showSuccess, showError, removeAlert } = useAlert();
 
   useEffect(() => {
     fetchCategories();
@@ -102,12 +107,13 @@ export default function GoalManagement({ goals, onGoalsChange }) {
       if (response.ok) {
         const newGoal = await response.json();
         onGoalsChange([...goals, newGoal]);
+        showSuccess('Goal duplicated successfully!');
       } else {
         throw new Error('Failed to duplicate goal');
       }
     } catch (error) {
       console.error('Error duplicating goal:', error);
-      setError('Failed to duplicate goal');
+      showError('Failed to duplicate goal. Please try again.');
     } finally {
       setIsDuplicating(null);
     }
@@ -130,6 +136,7 @@ export default function GoalManagement({ goals, onGoalsChange }) {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+    showSuccess('Goal exported successfully!');
   };
 
   const confirmActionHandler = async () => {
@@ -151,6 +158,7 @@ export default function GoalManagement({ goals, onGoalsChange }) {
         if (response.ok) {
           const updatedGoals = goals.filter(g => g.id !== goal.id);
           onGoalsChange(updatedGoals);
+          showSuccess('Goal deleted successfully!');
         } else {
           throw new Error('Failed to delete goal');
         }
@@ -171,6 +179,7 @@ export default function GoalManagement({ goals, onGoalsChange }) {
             g.id === goal.id ? updatedGoalData : g
           );
           onGoalsChange(updatedGoals);
+          showSuccess('Goal archived successfully!');
         } else {
           throw new Error('Failed to archive goal');
         }
@@ -178,7 +187,7 @@ export default function GoalManagement({ goals, onGoalsChange }) {
       }
     } catch (error) {
       console.error('Error performing action:', error);
-      setError(`Failed to ${confirmAction.type} goal`);
+      showError(`Failed to ${confirmAction.type} goal. Please try again.`);
     } finally {
       setShowConfirmDialog(false);
       setConfirmAction(null);
@@ -202,12 +211,13 @@ export default function GoalManagement({ goals, onGoalsChange }) {
         );
         onGoalsChange(updatedGoals);
         setEditingGoal(null);
+        showSuccess('Goal updated successfully!');
       } else {
         throw new Error('Failed to update goal');
       }
     } catch (error) {
       console.error('Error updating goal:', error);
-      setError('Failed to update goal');
+      showError('Failed to update goal. Please try again.');
     }
   };
 
@@ -789,6 +799,13 @@ export default function GoalManagement({ goals, onGoalsChange }) {
           </div>
         </div>
       )}
+
+      {/* Alert Container */}
+      <AlertContainer 
+        alerts={alerts} 
+        onRemoveAlert={removeAlert} 
+        position="top-right" 
+      />
     </div>
   );
 }

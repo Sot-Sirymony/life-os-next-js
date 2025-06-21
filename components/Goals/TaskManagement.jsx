@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaEdit, FaTrash, FaCopy, FaExchangeAlt, FaClock, FaChartLine, FaRobot } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaCopy, FaExchangeAlt, FaClock, FaChartLine, FaRobot, FaArrowRight, FaPlay, FaPause } from 'react-icons/fa';
+import useAlert from '../../hooks/useAlert';
+import AlertContainer from '../common/AlertContainer';
 
 // Add CSS animations for time tracking
 const timeTrackingStyles = `
@@ -28,6 +30,10 @@ export default function TaskManagement({ tasks, goals, onTasksChange, onGoalsCha
   const [filterGoal, setFilterGoal] = useState('all');
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState('desc');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Alert functionality
+  const { alerts, showSuccess, showError, removeAlert } = useAlert();
 
   const handleDuplicateTask = async (taskId) => {
     try {
@@ -57,11 +63,13 @@ export default function TaskManagement({ tasks, goals, onTasksChange, onGoalsCha
       if (response.ok) {
         const newTask = await response.json();
         onTasksChange([...tasks, newTask]);
+        showSuccess('Task duplicated successfully');
       } else {
         throw new Error('Failed to duplicate task');
       }
     } catch (error) {
       console.error('Error duplicating task:', error);
+      showError('Failed to duplicate task');
     } finally {
       setIsDuplicating(null);
     }
@@ -92,11 +100,13 @@ export default function TaskManagement({ tasks, goals, onTasksChange, onGoalsCha
           t.id === taskId ? updatedTask : t
         );
         onTasksChange(updatedTasks);
+        showSuccess('Task moved successfully');
       } else {
         throw new Error('Failed to move task');
       }
     } catch (error) {
       console.error('Error moving task:', error);
+      showError('Failed to move task');
     } finally {
       setIsMoving(null);
     }
@@ -123,12 +133,14 @@ export default function TaskManagement({ tasks, goals, onTasksChange, onGoalsCha
         if (response.ok) {
           const updatedTasks = tasks.filter(t => t.id !== taskId);
           onTasksChange(updatedTasks);
+          showSuccess('Task deleted successfully');
         } else {
           throw new Error('Failed to delete task');
         }
       }
     } catch (error) {
       console.error('Error performing action:', error);
+      showError('Failed to perform action');
     } finally {
       setShowConfirmDialog(false);
       setConfirmAction(null);
@@ -175,11 +187,14 @@ export default function TaskManagement({ tasks, goals, onTasksChange, onGoalsCha
             t.id === taskId ? savedTask : t
           );
           onTasksChange(updatedTasks);
+          showSuccess('Time tracking saved successfully');
         } else {
           console.error('Failed to save time tracking');
+          showError('Failed to save time tracking');
         }
       } catch (error) {
         console.error('Error saving time tracking:', error);
+        showError('Failed to save time tracking');
       }
     }
 
@@ -578,6 +593,7 @@ export default function TaskManagement({ tasks, goals, onTasksChange, onGoalsCha
             );
             onTasksChange(updatedTasks);
             setSelectedTask(null);
+            showSuccess('Task updated successfully');
           }}
           onCancel={() => setSelectedTask(null)}
         />
@@ -660,6 +676,13 @@ export default function TaskManagement({ tasks, goals, onTasksChange, onGoalsCha
           </div>
         </div>
       )}
+
+      {/* Alert Container */}
+      <AlertContainer 
+        alerts={alerts} 
+        onRemoveAlert={removeAlert} 
+        position="top-right" 
+      />
     </div>
   );
 }

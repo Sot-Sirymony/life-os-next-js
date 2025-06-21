@@ -1,6 +1,6 @@
 'use client';
 
-import Sidebar from '../../components/Sidebar';
+import ResponsiveLayout from '../../components/ResponsiveLayout';
 import { useState } from 'react';
 
 export default function SettingsPage() {
@@ -21,15 +21,15 @@ export default function SettingsPage() {
   const SettingItem = ({ title, description, type = 'toggle', value, onChange, options }) => (
     <div style={{
       display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      padding: '16px 0',
+      flexDirection: 'column',
+      gap: 'clamp(8px, 2vw, 12px)',
+      padding: 'clamp(12px, 3vw, 16px) 0',
       borderBottom: '1px solid #E6F0FF'
     }}>
-      <div>
+      <div style={{ flex: 1 }}>
         <h3 style={{
           margin: '0 0 4px 0',
-          fontSize: '16px',
+          fontSize: 'clamp(14px, 3vw, 16px)',
           color: '#333',
           fontFamily: "'Poppins', sans-serif",
           fontWeight: 600
@@ -38,20 +38,26 @@ export default function SettingsPage() {
         </h3>
         <p style={{
           margin: 0,
-          fontSize: '14px',
+          fontSize: 'clamp(12px, 2.5vw, 14px)',
           color: '#666',
-          fontFamily: "'PT Sans', sans-serif"
+          fontFamily: "'PT Sans', sans-serif",
+          lineHeight: 1.4
         }}>
           {description}
         </p>
       </div>
-      <div>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        minWidth: 'fit-content'
+      }}>
         {type === 'toggle' && (
           <label style={{
             position: 'relative',
             display: 'inline-block',
-            width: '50px',
-            height: '24px'
+            width: 'clamp(44px, 6vw, 50px)',
+            height: 'clamp(20px, 3vw, 24px)'
           }}>
             <input
               type="checkbox"
@@ -73,8 +79,8 @@ export default function SettingsPage() {
             <span style={{
               position: 'absolute',
               content: '""',
-              height: '18px',
-              width: '18px',
+              height: 'clamp(14px, 2.5vw, 18px)',
+              width: 'clamp(14px, 2.5vw, 18px)',
               left: '3px',
               bottom: '3px',
               background: 'white',
@@ -89,12 +95,13 @@ export default function SettingsPage() {
             value={value}
             onChange={(e) => onChange(e.target.value)}
             style={{
-              padding: '8px 12px',
+              padding: 'clamp(6px, 1.5vw, 8px) clamp(8px, 2vw, 12px)',
               borderRadius: '6px',
               border: '1px solid #ddd',
               background: '#fff',
               fontFamily: "'PT Sans', sans-serif",
-              fontSize: '14px'
+              fontSize: 'clamp(12px, 2.5vw, 14px)',
+              minWidth: 'clamp(120px, 20vw, 150px)'
             }}
           >
             {options.map(option => (
@@ -109,123 +116,95 @@ export default function SettingsPage() {
   );
 
   return (
-    <div style={{ 
-      display: 'flex',
-      background: '#E6F0FF',
-      minHeight: '100vh',
-      fontFamily: "'PT Sans', sans-serif"
-    }}>
-      <Sidebar />
-      <main style={{ 
-        flex: 1, 
-        padding: '24px',
-        overflowY: 'auto'
+    <ResponsiveLayout 
+      title="Settings" 
+      description="Customize your Life OS experience and preferences."
+    >
+      <div style={{
+        background: '#fff',
+        borderRadius: '12px',
+        padding: 'clamp(16px, 4vw, 24px)',
+        boxShadow: '0 2px 8px rgba(100,149,237,0.08)'
       }}>
-        <div style={{ marginBottom: '24px' }}>
-          <h1 style={{ 
-            margin: '0 0 8px 0',
-            fontSize: '32px',
-            color: '#333',
-            fontFamily: "'Poppins', sans-serif",
-            fontWeight: 600
-          }}>
-            Settings
-          </h1>
-          <p style={{ 
-            margin: 0,
-            color: '#666',
-            fontSize: '16px'
-          }}>
-            Customize your Life OS experience and preferences.
-          </p>
-        </div>
-
-        <div style={{
-          background: '#fff',
-          borderRadius: '12px',
-          padding: '24px',
-          boxShadow: '0 2px 8px rgba(100,149,237,0.08)'
+        <h2 style={{
+          margin: '0 0 clamp(16px, 4vw, 24px) 0',
+          fontSize: 'clamp(18px, 4vw, 20px)',
+          color: '#333',
+          fontFamily: "'Poppins', sans-serif",
+          fontWeight: 600
         }}>
-          <h2 style={{
-            margin: '0 0 24px 0',
-            fontSize: '20px',
-            color: '#333',
-            fontFamily: "'Poppins', sans-serif",
-            fontWeight: 600
-          }}>
-            Preferences
-          </h2>
+          Preferences
+        </h2>
 
-          <SettingItem
-            title="Notifications"
-            description="Receive notifications for goal deadlines and task reminders"
-            value={settings.notifications}
-            onChange={(value) => handleSettingChange('notifications', value)}
-          />
+        <SettingItem
+          title="Notifications"
+          description="Receive notifications for goal deadlines and task reminders"
+          value={settings.notifications}
+          onChange={(value) => handleSettingChange('notifications', value)}
+        />
 
-          <SettingItem
-            title="AI Optimization"
-            description="Enable AI-powered task optimization and time estimation"
-            value={settings.aiOptimization}
-            onChange={(value) => handleSettingChange('aiOptimization', value)}
-          />
+        <SettingItem
+          title="AI Optimization"
+          description="Enable AI-powered task optimization and time estimation"
+          value={settings.aiOptimization}
+          onChange={(value) => handleSettingChange('aiOptimization', value)}
+        />
 
-          <SettingItem
-            title="Weekly Review"
-            description="Get weekly progress summaries and goal reviews"
-            value={settings.weeklyReview}
-            onChange={(value) => handleSettingChange('weeklyReview', value)}
-          />
+        <SettingItem
+          title="Weekly Review"
+          description="Get weekly progress summaries and goal reviews"
+          value={settings.weeklyReview}
+          onChange={(value) => handleSettingChange('weeklyReview', value)}
+        />
 
-          <SettingItem
-            title="Daily Reminders"
-            description="Receive daily task and goal reminders"
-            value={settings.dailyReminders}
-            onChange={(value) => handleSettingChange('dailyReminders', value)}
-          />
+        <SettingItem
+          title="Daily Reminders"
+          description="Receive daily task and goal reminders"
+          value={settings.dailyReminders}
+          onChange={(value) => handleSettingChange('dailyReminders', value)}
+        />
 
-          <SettingItem
-            title="Theme"
-            description="Choose your preferred color theme"
-            type="select"
-            value={settings.theme}
-            onChange={(value) => handleSettingChange('theme', value)}
-            options={[
-              { value: 'light', label: 'Light' },
-              { value: 'dark', label: 'Dark' },
-              { value: 'auto', label: 'Auto' }
-            ]}
-          />
+        <SettingItem
+          title="Theme"
+          description="Choose your preferred color theme"
+          type="select"
+          value={settings.theme}
+          onChange={(value) => handleSettingChange('theme', value)}
+          options={[
+            { value: 'light', label: 'Light' },
+            { value: 'dark', label: 'Dark' },
+            { value: 'auto', label: 'Auto' }
+          ]}
+        />
 
-          <SettingItem
-            title="Language"
-            description="Select your preferred language"
-            type="select"
-            value={settings.language}
-            onChange={(value) => handleSettingChange('language', value)}
-            options={[
-              { value: 'en', label: 'English' },
-              { value: 'es', label: 'Spanish' },
-              { value: 'fr', label: 'French' },
-              { value: 'de', label: 'German' }
-            ]}
-          />
+        <SettingItem
+          title="Language"
+          description="Select your preferred language"
+          type="select"
+          value={settings.language}
+          onChange={(value) => handleSettingChange('language', value)}
+          options={[
+            { value: 'en', label: 'English' },
+            { value: 'es', label: 'Spanish' },
+            { value: 'fr', label: 'French' },
+            { value: 'de', label: 'German' }
+          ]}
+        />
 
-          <SettingItem
-            title="Timezone"
-            description="Set your local timezone for accurate scheduling"
-            type="select"
-            value={settings.timezone}
-            onChange={(value) => handleSettingChange('timezone', value)}
-            options={[
-              { value: 'UTC', label: 'UTC' },
-              { value: 'EST', label: 'Eastern Time' },
-              { value: 'PST', label: 'Pacific Time' },
-              { value: 'GMT', label: 'Greenwich Mean Time' }
-            ]}
-          />
-        </div>
-      </main>
-    </div>
+        <SettingItem
+          title="Timezone"
+          description="Set your local timezone for accurate scheduling"
+          type="select"
+          value={settings.timezone}
+          onChange={(value) => handleSettingChange('timezone', value)}
+          options={[
+            { value: 'UTC', label: 'UTC' },
+            { value: 'EST', label: 'Eastern Time' },
+            { value: 'PST', label: 'Pacific Time' },
+            { value: 'GMT', label: 'Greenwich Mean Time' }
+          ]}
+        />
+      </div>
+    </ResponsiveLayout>
   );
 } 

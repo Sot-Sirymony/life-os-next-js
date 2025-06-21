@@ -3,6 +3,8 @@ import CategoryDetailView from '../Categories/CategoryDetailView';
 import CategoryAnalytics from '../Categories/CategoryAnalytics';
 import CategoryManagement from '../Categories/CategoryManagement';
 import CategoryTemplates from '../Categories/CategoryTemplates';
+import useAlert from '../../hooks/useAlert';
+import AlertContainer from '../common/AlertContainer';
 
 export default function GoalCategories() {
   const [categories, setCategories] = useState([]);
@@ -17,6 +19,9 @@ export default function GoalCategories() {
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
   const [activeTab, setActiveTab] = useState('categories'); // categories, analytics, management, templates
+
+  // Alert functionality
+  const { alerts, showSuccess, showError, removeAlert } = useAlert();
 
   useEffect(() => {
     fetchData();
@@ -89,13 +94,13 @@ export default function GoalCategories() {
         await fetchData();
         setIsAddingCategory(false);
         setNewCategory({ name: '', description: '', icon: '📁', color: '#6495ED' });
-        setSuccessMessage('Category created successfully');
+        showSuccess('Category created successfully!');
       } else {
         throw new Error('Failed to create category');
       }
     } catch (error) {
       console.error('Error creating category:', error);
-      setError('Failed to create category');
+      showError('Failed to create category. Please try again.');
     }
   };
 
@@ -157,13 +162,13 @@ export default function GoalCategories() {
           const updatedCategories = categories.filter(c => c.id !== category.id);
           setCategories(updatedCategories);
           setSelectedCategory(null);
-          setSuccessMessage('Category deleted successfully');
+          showSuccess('Category deleted successfully!');
         } else {
           throw new Error('Failed to delete category');
         }
       } catch (error) {
         console.error('Error deleting category:', error);
-        setError('Failed to delete category. Please try again.');
+        showError('Failed to delete category. Please try again.');
       }
     }
   };
@@ -188,13 +193,13 @@ export default function GoalCategories() {
         setIsEditingCategory(false);
         setEditingCategory(null);
         setNewCategory({ name: '', description: '', icon: '📁', color: '#6495ED' });
-        setSuccessMessage('Category updated successfully');
+        showSuccess('Category updated successfully!');
       } else {
         throw new Error('Failed to update category');
       }
     } catch (error) {
       console.error('Error updating category:', error);
-      setError('Failed to update category. Please try again.');
+      showError('Failed to update category. Please try again.');
     }
   };
 
@@ -721,6 +726,13 @@ export default function GoalCategories() {
           </div>
         </div>
       )}
+
+      {/* Alert Container */}
+      <AlertContainer 
+        alerts={alerts} 
+        onRemoveAlert={removeAlert} 
+        position="top-right" 
+      />
     </div>
   );
 } 
