@@ -1,0 +1,58 @@
+
+**Note**: This project uses PostgreSQL on port 5433 and the app typically runs on port 3001. Always check the terminal output for the correct URLs when starting the development server.
+
+PgAdmin is running on port 8080, not 5050.
+To view your database, open your browser and go to:
+http://localhost:8080
+Login credentials:
+Email: admin@lifeos.com
+Password: admin123
+Let me know if you can access it now! If you want to use a different port or credentials, I can help you update the configuration.
+
+
+
+Great! Now that you can open PgAdmin, here’s what to do next to view and manage your database:
+
+---
+
+## 1. **Log in to PgAdmin**
+- Go to [http://localhost:8080](http://localhost:8080)
+- **Email:** `admin@lifeos.com`
+- **Password:** `admin123`
+
+---
+
+## 2. **Register a New Server**
+1. In the left sidebar, right-click on **Servers** and select **Register > Server...**
+2. In the **General** tab, set:
+   - **Name:** `Life OS` (or any name you like)
+3. In the **Connection** tab, fill in:
+   - **Host name/address:** `postgres`
+   - **Port:** `5432`
+   - **Username:** `postgres`
+   - **Password:** `password`
+   - (You can check “Save Password” if you want)
+4. Click **Save**.
+
+---
+
+## 3. **Browse Your Database**
+- Expand the new server you just created.
+- Expand **Databases > life_os_dev > Schemas > public > Tables**.
+- Right-click any table (like `User`, `Goal`, or `Task`) and select **View/Edit Data > All Rows** to see your data.
+
+---
+
+## 4. **You Can Also:**
+- Run SQL queries using the **Query Tool** (right-click the database and select "Query Tool").
+- Inspect table structures, relationships, and more.
+
+---
+
+### ⚠️ **Note**
+- The **Host name/address** should be `postgres` (the Docker service name), not `localhost`, when connecting from PgAdmin running in Docker.
+- If you get a connection error, try `localhost` and port `5433` instead.
+
+---
+
+Would you like step-by-step screenshots or help with a specific query or table?

@@ -9,7 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -24,12 +24,14 @@ model User {
   categories Category[]
   preferences UserPreferences?
   activities Activity[]
+
+  @@map("users")
 }
 
 model UserPreferences {
   id        String   @id @default(uuid())
   userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   theme     String   @default("light")
   notifications Boolean @default(true)
   aiOptimization Boolean @default(true)
@@ -39,6 +41,8 @@ model UserPreferences {
   timezone  String   @default("UTC")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("user_preferences")
 }
 
 model Category {
@@ -51,10 +55,12 @@ model Category {
   isArchived  Boolean  @default(false)
   sortOrder   Int      @default(0)
   userId      String
-  user        User     @relation(fields: [userId], references: [id])
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   goals       Goal[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@map("categories")
 }
 
 model Goal {
@@ -62,7 +68,7 @@ model Goal {
   title       String
   description String?
   categoryId  String
-  category    Category @relation(fields: [categoryId], references: [id])
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   status      String   @default("Not Started")
   progress    Int      @default(0)
   timeframe   String   @default("Short")
@@ -71,11 +77,13 @@ model Goal {
   dependencies String? // JSON array of goal IDs
   completionDate DateTime?
   userId      String
-  user        User     @relation(fields: [userId], references: [id])
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   tasks       Task[]
   activities  Activity[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@map("goals")
 }
 
 model Task {
@@ -92,13 +100,18 @@ model Task {
   aiIntegration Boolean @default(false)
   optimizationSuggestions String? // JSON array of suggestions
   scheduledTime DateTime?
+  day         Int?     // For weekly planner (0-6, Monday-Sunday)
+  startTime   String?  // For weekly planner (HH:MM format)
+  endTime     String?  // For weekly planner (HH:MM format)
   goalId      String?
-  goal        Goal?    @relation(fields: [goalId], references: [id])
+  goal        Goal?    @relation(fields: [goalId], references: [id], onDelete: SetNull)
   userId      String
-  user        User     @relation(fields: [userId], references: [id])
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   activities  Activity[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@map("tasks")
 }
 
 model Activity {
@@ -107,10 +120,12 @@ model Activity {
   description String
   metadata    String?  // JSON object with additional data
   goalId      String?
-  goal        Goal?    @relation(fields: [goalId], references: [id])
+  goal        Goal?    @relation(fields: [goalId], references: [id], onDelete: SetNull)
   taskId      String?
-  task        Task?    @relation(fields: [taskId], references: [id])
+  task        Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
   userId      String
-  user        User     @relation(fields: [userId], references: [id])
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
+
+  @@map("activities")
 }
